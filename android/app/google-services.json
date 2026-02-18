@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "207966505420",
+    "project_id": "campustrade-b8b0b",
+    "storage_bucket": "campustrade-b8b0b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:207966505420:android:cd31d3030c20e7d79f7569",
+        "android_client_info": {
+          "package_name": "com.example.campustrade"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3_h-dE2ymE2_FZmMY3lHOKUht3joyUOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
