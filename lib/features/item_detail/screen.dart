@@ -32,10 +32,41 @@ class ItemDetailScreen extends StatelessWidget {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (imageUrl != null && imageUrl.isNotEmpty)
-                ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity, height: 220)),
-              if (imageUrl == null || imageUrl.isEmpty)
-                Container(height: 220, decoration: BoxDecoration(color: Colors.blue[100], borderRadius: BorderRadius.circular(12)), child: const Center(child: Icon(Icons.image, size: 64))),
+              Center(
+                child: Container(
+                  width: double.infinity,
+                  height: 250,
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: (imageUrl != null && imageUrl.isNotEmpty)
+                        ? Container(
+                            color: Colors.white,
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              height: 250,
+                            ),
+                          )
+                        : Container(
+                            color: Colors.blue[100],
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.image, size: 64, color: Colors.white70),
+                          ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
               Text(title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),

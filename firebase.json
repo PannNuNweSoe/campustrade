@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"campustrade-b8b0b","appId":"1:207966505420:android:cd31d3030c20e7d79f7569","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"campustrade-b8b0b","configurations":{"android":"1:207966505420:android:cd31d3030c20e7d79f7569","ios":"1:207966505420:ios:10eb2af5a42074a39f7569","macos":"1:207966505420:ios:10eb2af5a42074a39f7569","web":"1:207966505420:web:7467fb538100303c9f7569","windows":"1:207966505420:web:e2a786381a3c46a19f7569"}}}}}}
+{
+	"flutter": {
+		"platforms": {
+			"android": {
+				"default": {
+					"projectId": "campustrade-b8b0b",
+					"appId": "1:207966505420:android:cd31d3030c20e7d79f7569",
+					"fileOutput": "android/app/google-services.json"
+				}
+			},
+			"dart": {
+				"lib/firebase_options.dart": {
+					"projectId": "campustrade-b8b0b",
+					"configurations": {
+						"android": "1:207966505420:android:cd31d3030c20e7d79f7569",
+						"ios": "1:207966505420:ios:10eb2af5a42074a39f7569",
+						"macos": "1:207966505420:ios:10eb2af5a42074a39f7569",
+						"web": "1:207966505420:web:7467fb538100303c9f7569",
+						"windows": "1:207966505420:web:e2a786381a3c46a19f7569"
+					}
+				}
+			}
+		}
+	},
+	"hosting": {
+		"public": "build/web",
+		"ignore": [
+			"firebase.json",
+			"**/.*",
+			"**/node_modules/**"
+		],
+		"rewrites": [
+			{
+				"source": "**",
+				"destination": "/index.html"
+			}
+		]
+	}
+}

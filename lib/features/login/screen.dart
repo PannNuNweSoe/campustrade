@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 
@@ -22,10 +23,35 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signIn() async {
     setState(() => _loading = true);
     try {
-      await _auth.signIn(_emailCtrl.text.trim(), _passCtrl.text);
-      _show('Signed in');
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+      );
+      _show('Logged in');
       if (!mounted) return;
       context.go('/home');
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'invalid-email':
+          message = 'Invalid email format.';
+          break;
+        case 'user-not-found':
+          message = 'No account found for this email. Use Continue with Google.';
+          break;
+        case 'wrong-password':
+          message = 'Incorrect password.';
+          break;
+        case 'invalid-credential':
+          message = 'Invalid email/password credentials.';
+          break;
+        case 'too-many-requests':
+          message = 'Too many attempts. Try again later.';
+          break;
+        default:
+          message = 'Sign in failed: ${e.message ?? e.code}';
+      }
+      _show(message);
     } catch (e) {
       _show('Sign in failed: $e');
     } finally {
@@ -33,17 +59,47 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _signUp() async {
+  Future<void> _continueWithGoogle() async {
     setState(() => _loading = true);
     try {
-      await _auth.signUp(_emailCtrl.text.trim(), _passCtrl.text);
-      _show('Account created and signed in');
+      await _auth.signInWithGoogle();
+      _show('Signed in with Google');
       if (!mounted) return;
       context.go('/home');
+    } on FirebaseAuthException catch (e) {
+      _show('Google sign in failed: ${e.message ?? e.code}');
     } catch (e) {
-      _show('Sign up failed: $e');
+      _show('Google sign in failed: $e');
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      _show('Please enter your email first.');
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      _show('Password reset email sent. Please check your inbox.');
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'invalid-email':
+          message = 'Invalid email format.';
+          break;
+        case 'user-not-found':
+          message = 'No account found for this email.';
+          break;
+        default:
+          message = 'Reset failed: ${e.message ?? e.code}';
+      }
+      _show(message);
+    } catch (e) {
+      _show('Reset failed: $e');
     }
   }
 
@@ -70,12 +126,22 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Colors.lightBlue.shade100,
+                    child: const Icon(
+                      Icons.storefront,
+                      size: 34,
+                      color: Colors.lightBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'Welcome to CampusTrade',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
-                  const Text('Sign in or create an account to continue'),
+                  const Text('Login or continue with Google'),
                   const SizedBox(height: 20),
                   TextField(
                     controller: _emailCtrl,
@@ -95,17 +161,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(onPressed: _signIn, child: const Text('Sign in')),
+                          child: ElevatedButton(onPressed: _signIn, child: const Text('Login')),
+                        ),
+                        TextButton(
+                          onPressed: _forgotPassword,
+                          child: const Text('Forgot password?'),
                         ),
                         const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
-                          child: OutlinedButton(onPressed: _signUp, child: const Text('Sign up')),
-                        ),
-                        const SizedBox(height: 12),
-                        TextButton(
-                          onPressed: () => context.go('/home'),
-                          child: const Text('Continue without signing in'),
+                          child: OutlinedButton(onPressed: _continueWithGoogle, child: const Text('Continue with Google')),
                         ),
                       ],
                     )

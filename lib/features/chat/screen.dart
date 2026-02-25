@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> params;
@@ -11,27 +9,90 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  String? chatId;
   final _controller = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    chatId = widget.params['chatId'] as String?;
-  }
+  final List<Map<String, dynamic>> _messages = [];
 
-  Future<void> _sendMessage() async {
+  void _sendMessage() {
     final text = _controller.text.trim();
-    if (text.isEmpty || chatId == null) return;
-    final user = FirebaseAuth.instance.currentUser;
-    await FirebaseFirestore.instance.collection('chats').doc(chatId).collection('messages').add({
-      'text': text,
-      'sender': user?.uid,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    _controller.clear();
-  }
+    if (text.isEmpty) return;
+    final lowerText = text.toLowerCase();
 
+    String replyText;
+    final asksAvailability =
+        lowerText.contains('available') ||
+        lowerText.contains('still there') ||
+        lowerText.contains('sold');
+    final asksPrice =
+        lowerText.contains('price') ||
+        lowerText.contains('last') ||
+        lowerText.contains('discount') ||
+        lowerText.contains('best');
+    final asksMeetup =
+        lowerText.contains('meet') ||
+        lowerText.contains('where') ||
+        lowerText.contains('pickup') ||
+        lowerText.contains('location');
+    final asksTime =
+        lowerText.contains('today') ||
+        lowerText.contains('tonight') ||
+        lowerText.contains('time') ||
+        lowerText.contains('when');
+    final asksCondition =
+        lowerText.contains('condition') ||
+        lowerText.contains('scratch') ||
+        lowerText.contains('damage') ||
+        lowerText.contains('new');
+
+    if (asksAvailability) {
+      replyText = 'Hi! The item is still available.';
+    } else if (asksPrice) {
+      replyText = 'The price is negotiable a bit. What is your offer?';
+    } else if (asksMeetup) {
+      replyText = 'We can meet on campus near the library this afternoon.';
+    } else if (asksTime) {
+      replyText = 'I am free after 3 PM today. Does that work for you?';
+    } else if (asksCondition) {
+      replyText = 'It is in good condition and works properly.';
+    } else {
+      replyText = 'Thanks for your message! Yes, it is available.';
+    }
+
+    setState(() {
+      _messages.add({
+        'text': text,
+        'sender': 'user',
+        'createdAt': DateTime.now(),
+      });
+    });
+
+    _controller.clear();
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+
+      final lowerMessage = text.toLowerCase();
+      if (lowerMessage.contains('100') || RegExp(r'\d+').hasMatch(lowerMessage)) {
+        replyText = 'The price is negotiable. Let me think about your offer.';
+      } else if (lowerMessage.contains('thank')) {
+        replyText = 'Thank you for your interest in my item!';
+      } else if (lowerMessage.contains('condition')) {
+        replyText = 'The item is in good condition and lightly used.';
+      } else if (lowerMessage.contains('pickup') || lowerMessage.contains('meet')) {
+        replyText = 'We can meet near the library this afternoon.';
+      } else {
+        replyText = 'Could you clarify your question?';
+      }
+
+      setState(() {
+        _messages.add({
+          'text': replyText,
+          'sender': 'owner',
+          'createdAt': DateTime.now(),
+        });
+      });
+    });
+  }
   @override
   Widget build(BuildContext context) {
     final itemImage = (widget.params['itemImage'] as String?)?.trim();
@@ -41,30 +102,29 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           if (itemImage != null && itemImage.isNotEmpty) Padding(padding: const EdgeInsets.all(8.0), child: Image.network(itemImage, height: 120)),
           Expanded(
-            child: chatId == null
-                ? const Center(child: Text('No chat selected'))
-                : StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance.collection('chats').doc(chatId).collection('messages').orderBy('createdAt').snapshots(),
-                    builder: (context, snap) {
-                      if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-                      final docs = snap.data!.docs;
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: docs.length,
-                        itemBuilder: (context, i) {
-                          final d = docs[i].data() as Map<String, dynamic>;
-                          final isMe = d['sender'] == FirebaseAuth.instance.currentUser?.uid;
-                          return Align(
-                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Card(
-                              color: isMe ? Colors.lightBlue : Colors.white,
-                              child: Padding(padding: const EdgeInsets.all(8.0), child: Text(d['text'] ?? '', style: TextStyle(color: isMe ? Colors.white : Colors.black))),
-                            ),
-                          );
-                        },
-                      );
-                    },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _messages.length,
+              itemBuilder: (context, i) {
+                final d = _messages[i];
+                final isMe = d['sender'] == 'user';
+                return Align(
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Card(
+                    color: isMe ? Colors.lightBlue : Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        d['text'] ?? '',
+                        style: TextStyle(
+                          color: isMe ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
                   ),
+                );
+              },
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -25,6 +27,38 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
+    return cred;
+  }
+
+  Future<UserCredential> signInWithGoogle() async {
+    late UserCredential cred;
+
+    if (kIsWeb) {
+      final provider = GoogleAuthProvider();
+      cred = await _auth.signInWithPopup(provider);
+    } else {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        throw Exception('Google sign-in cancelled');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final authCredential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      cred = await _auth.signInWithCredential(authCredential);
+    }
+
+    final user = cred.user;
+    if (user != null) {
+      await _db.collection('users').doc(user.uid).set({
+        'email': user.email,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
     return cred;
   }
 

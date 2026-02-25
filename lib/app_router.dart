@@ -1,13 +1,29 @@
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'features/login/screen.dart';
 import 'features/home/screen.dart';
 import 'features/profile/screen.dart';
 import 'features/chat/screen.dart';
 import 'features/item_detail/screen.dart';
+import 'features/post_item/screen.dart';
 
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
+  redirect: (context, state) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final isLoginRoute = state.matchedLocation == '/';
+
+    if (!isLoggedIn && !isLoginRoute) {
+      return '/';
+    }
+
+    if (isLoggedIn && isLoginRoute) {
+      return '/home';
+    }
+
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/',
@@ -35,6 +51,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/profile',
       builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: '/post',
+      builder: (context, state) => const PostItemScreen(),
     ),
     
   ],

@@ -23,7 +23,41 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (imageUrl != null && imageUrl.isNotEmpty) Center(child: Image.network(imageUrl, height: 160)),
+            Center(
+              child: Container(
+                width: double.infinity,
+                height: 250,
+                constraints: const BoxConstraints(maxWidth: 520),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: (imageUrl != null && imageUrl.isNotEmpty)
+                      ? Container(
+                          color: Colors.white,
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.contain,
+                            width: double.infinity,
+                            height: 250,
+                          ),
+                        )
+                      : Container(
+                          color: Colors.blue[100],
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.image, size: 64, color: Colors.white70),
+                        ),
+                ),
+              ),
+            ),
             const SizedBox(height: 8),
             Text(item['title'] ?? '', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
@@ -142,7 +176,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 height: 110,
                                 decoration: BoxDecoration(color: Colors.blue[100], borderRadius: BorderRadius.circular(8)),
                                 child: thumbUrl != null && thumbUrl.isNotEmpty
-                                  ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(thumbUrl, fit: BoxFit.cover, width: double.infinity, height: 110))
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        color: Colors.white,
+                                        child: Image.network(
+                                          thumbUrl,
+                                          fit: BoxFit.contain,
+                                          width: double.infinity,
+                                          height: 110,
+                                        ),
+                                      ),
+                                    )
                                   : const Center(child: Icon(Icons.image, size: 48, color: Colors.white70)),
                               ),
                               const SizedBox(height: 8),
@@ -154,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(it['price'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Chip(label: Text('New', style: TextStyle(color: Colors.white)), backgroundColor: Colors.lightBlue),
+                                  Chip(label: Text(it['condition'] ?? 'New', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.lightBlue),
                                 ],
                               ),
                             ],
@@ -171,33 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.lightBlue,
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (_) => Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Post an item', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 12),
-                    const TextField(decoration: InputDecoration(labelText: 'Item name')),
-                    const SizedBox(height: 8),
-                    const TextField(decoration: InputDecoration(labelText: 'Price')),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(onPressed: () { Navigator.of(context).pop(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item posted (mock)'))); }, child: const Text('Post Item')),
-                    )
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+        onPressed: () => GoRouter.of(context).go('/post'),
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
