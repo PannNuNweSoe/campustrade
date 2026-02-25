@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import 'provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map<String, dynamic> params;
@@ -10,122 +13,116 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
+  final ChatService _chatService = ChatService();
 
-  final List<Map<String, dynamic>> _messages = [];
+  bool _isSending = false;
 
-  void _sendMessage() {
+  String get _chatId => (widget.params['chatId'] as String?)?.trim() ?? '';
+
+  Map<String, dynamic> get _itemContext {
+    return {
+      'itemId': widget.params['itemId'],
+      'title': widget.params['title'],
+      'description': widget.params['description'],
+      'price': widget.params['price'],
+      'condition': widget.params['condition'],
+      'ownerUid': widget.params['ownerUid'],
+      'itemImage': widget.params['itemImage'],
+    };
+  }
+
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    final lowerText = text.toLowerCase();
+    if (text.isEmpty || _chatId.isEmpty || _isSending) return;
 
-    String replyText;
-    final asksAvailability =
-        lowerText.contains('available') ||
-        lowerText.contains('still there') ||
-        lowerText.contains('sold');
-    final asksPrice =
-        lowerText.contains('price') ||
-        lowerText.contains('last') ||
-        lowerText.contains('discount') ||
-        lowerText.contains('best');
-    final asksMeetup =
-        lowerText.contains('meet') ||
-        lowerText.contains('where') ||
-        lowerText.contains('pickup') ||
-        lowerText.contains('location');
-    final asksTime =
-        lowerText.contains('today') ||
-        lowerText.contains('tonight') ||
-        lowerText.contains('time') ||
-        lowerText.contains('when');
-    final asksCondition =
-        lowerText.contains('condition') ||
-        lowerText.contains('scratch') ||
-        lowerText.contains('damage') ||
-        lowerText.contains('new');
-
-    if (asksAvailability) {
-      replyText = 'Hi! The item is still available.';
-    } else if (asksPrice) {
-      replyText = 'The price is negotiable a bit. What is your offer?';
-    } else if (asksMeetup) {
-      replyText = 'We can meet on campus near the library this afternoon.';
-    } else if (asksTime) {
-      replyText = 'I am free after 3 PM today. Does that work for you?';
-    } else if (asksCondition) {
-      replyText = 'It is in good condition and works properly.';
-    } else {
-      replyText = 'Thanks for your message! Yes, it is available.';
-    }
-
-    setState(() {
-      _messages.add({
-        'text': text,
-        'sender': 'user',
-        'createdAt': DateTime.now(),
-      });
-    });
-
+    setState(() => _isSending = true);
     _controller.clear();
 
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      await _chatService.sendMessage(
+        chatId: _chatId,
+        text: text,
+        itemContext: _itemContext,
+      );
+    } catch (e) {
       if (!mounted) return;
-
-      final lowerMessage = text.toLowerCase();
-      if (lowerMessage.contains('100') || RegExp(r'\d+').hasMatch(lowerMessage)) {
-        replyText = 'The price is negotiable. Let me think about your offer.';
-      } else if (lowerMessage.contains('thank')) {
-        replyText = 'Thank you for your interest in my item!';
-      } else if (lowerMessage.contains('condition')) {
-        replyText = 'The item is in good condition and lightly used.';
-      } else if (lowerMessage.contains('pickup') || lowerMessage.contains('meet')) {
-        replyText = 'We can meet near the library this afternoon.';
-      } else {
-        replyText = 'Could you clarify your question?';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
       }
-
-      setState(() {
-        _messages.add({
-          'text': replyText,
-          'sender': 'owner',
-          'createdAt': DateTime.now(),
-        });
-      });
-    });
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     final itemImage = (widget.params['itemImage'] as String?)?.trim();
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Chat')),
       body: Column(
         children: [
-          if (itemImage != null && itemImage.isNotEmpty) Padding(padding: const EdgeInsets.all(8.0), child: Image.network(itemImage, height: 120)),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _messages.length,
-              itemBuilder: (context, i) {
-                final d = _messages[i];
-                final isMe = d['sender'] == 'user';
-                return Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Card(
-                    color: isMe ? Colors.lightBlue : Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        d['text'] ?? '',
-                        style: TextStyle(
-                          color: isMe ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
+          if (itemImage != null && itemImage.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Image.network(itemImage, height: 120),
             ),
+          Expanded(
+            child: _chatId.isEmpty
+                ? const Center(child: Text('Invalid chat ID'))
+                : StreamBuilder(
+                    stream: _chatService.messagesStream(_chatId),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final docs = snap.data?.docs ?? [];
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: docs.length,
+                        itemBuilder: (context, i) {
+                          final d = docs[i].data();
+                          final sender = d['sender'] as String?;
+                          final text = (d['text'] as String?) ?? '';
+                          final isMe = sender == currentUid;
+
+                          return Align(
+                            alignment: isMe
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Card(
+                              color: isMe
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  text,
+                                  style: TextStyle(
+                                    color: isMe ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
+          if (_isSending)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 6),
+              child: Text(
+                'Generating reply...',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -133,11 +130,28 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: InputDecoration(hintText: 'Type a message', filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none)),
+                    enabled: !_isSending,
+                    decoration: InputDecoration(
+                      hintText: _isSending
+                          ? 'Please wait...'
+                          : 'Type a message',
+                      prefixIcon: const Icon(Icons.chat_bubble_outline),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
-                FloatingActionButton(onPressed: _sendMessage, child: const Icon(Icons.send), mini: true),
+                FloatingActionButton(
+                  onPressed: _isSending ? null : _sendMessage,
+                  mini: true,
+                  child: const Icon(Icons.send),
+                ),
               ],
             ),
           ),
@@ -145,9 +159,12 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
-        selectedItemColor: Colors.lightBlue,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
-        onTap: (i) { if (i==0) Navigator.of(context).pushReplacementNamed('/home'); },
+        onTap: (i) {
+          if (i == 0) context.go('/home');
+          if (i == 1) context.go('/profile');
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),

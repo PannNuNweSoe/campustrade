@@ -11,87 +11,64 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  void _openDetail(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final item = doc.data()!;
-    final imageUrl = (item['imageUrl'] as String?)?.trim();
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: double.infinity,
-                height: 250,
-                constraints: const BoxConstraints(maxWidth: 520),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: (imageUrl != null && imageUrl.isNotEmpty)
-                      ? Container(
-                          color: Colors.white,
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: 250,
-                          ),
-                        )
-                      : Container(
-                          color: Colors.blue[100],
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.image, size: 64, color: Colors.white70),
-                        ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(item['title'] ?? '', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(item['price'] ?? '', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            Text(item['description'] ?? ''),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      final currentUid = FirebaseAuth.instance.currentUser?.uid;
-                      final ownerUid = item['ownerUid'];
-                      // create chat doc
-                      final chatRef = await FirebaseFirestore.instance.collection('chats').add({
-                        'itemId': doc.id,
-                        'itemImage': imageUrl,
-                        'participants': [ownerUid, currentUid],
-                        'createdAt': FieldValue.serverTimestamp(),
-                      });
-                      // navigate to chat
-                      GoRouter.of(context).go('/chat', extra: {'chatId': chatRef.id, 'itemImage': item['imageUrl'], 'ownerUid': ownerUid});
-                    },
-                    child: const Text('Contact Owner'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  Future<void> _backfillMySellerInfo() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Please sign in first.')),
+      );
+      return;
+    }
+
+    final ownerEmail = user.email ?? '';
+    final ownerName =
+        (user.displayName != null && user.displayName!.trim().isNotEmpty)
+        ? user.displayName!.trim()
+        : (ownerEmail.contains('@')
+              ? ownerEmail.split('@').first
+              : 'Campus Seller');
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('items')
+        .where('ownerUid', isEqualTo: user.uid)
+        .get();
+
+    int updated = 0;
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final existingName = (data['ownerName'] as String?)?.trim() ?? '';
+      final existingEmail = (data['ownerEmail'] as String?)?.trim() ?? '';
+
+      if (existingName.isEmpty || existingEmail.isEmpty) {
+        batch.update(doc.reference, {
+          'ownerName': ownerName,
+          'ownerEmail': ownerEmail,
+        });
+        updated++;
+      }
+    }
+
+    if (updated > 0) {
+      await batch.commit();
+    }
+
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(content: Text('Migration complete: $updated item(s) updated.')),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -100,16 +77,34 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Icon(Icons.swap_horiz),
+            const Icon(Icons.storefront_outlined),
             const SizedBox(width: 8),
             const Text('CampusTrade'),
           ],
         ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications)),
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_none),
+          ),
+          IconButton(
+            tooltip: 'Backfill my seller info',
+            onPressed: _backfillMySellerInfo,
+            icon: const Icon(Icons.manage_history),
+          ),
           IconButton(
             tooltip: 'Seed sample items',
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final user = FirebaseAuth.instance.currentUser;
+              final ownerEmail = user?.email ?? '';
+              final ownerName =
+                  (user?.displayName != null && user!.displayName!.trim().isNotEmpty)
+                  ? user.displayName!.trim()
+                  : (ownerEmail.contains('@')
+                        ? ownerEmail.split('@').first
+                        : 'Campus Seller');
               final batch = FirebaseFirestore.instance.batch();
               final col = FirebaseFirestore.instance.collection('items');
               for (var i = 1; i <= 6; i++) {
@@ -119,12 +114,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   'description': 'This is a sample item #$i',
                   'price': '฿${(i + 1) * 100}',
                   'imageUrl': null,
-                  'ownerUid': FirebaseAuth.instance.currentUser?.uid,
+                  'ownerUid': user?.uid,
+                  'ownerName': ownerName,
+                  'ownerEmail': ownerEmail,
                   'createdAt': FieldValue.serverTimestamp(),
                 });
               }
               await batch.commit();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sample items added')));
+              if (!mounted) return;
+              messenger.showSnackBar(const SnackBar(content: Text('Sample items added')));
             },
             icon: const Icon(Icons.auto_awesome),
           ),
@@ -135,9 +133,25 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim().toLowerCase();
+                });
+              },
               decoration: InputDecoration(
                 hintText: 'Search items...',
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        icon: const Icon(Icons.close),
+                      ),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -150,6 +164,34 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                 final docs = snap.data?.docs ?? [];
+
+                final filteredDocs = docs.where((doc) {
+                  if (_searchQuery.isEmpty) return true;
+                  final data = doc.data();
+                  final title = (data['title'] as String?)?.toLowerCase() ?? '';
+                  final description = (data['description'] as String?)?.toLowerCase() ?? '';
+                  final price = (data['price'] as String?)?.toLowerCase() ?? '';
+                  final condition = (data['condition'] as String?)?.toLowerCase() ?? '';
+                    final ownerName = (data['ownerName'] as String?)?.toLowerCase() ?? '';
+                    final ownerEmail = (data['ownerEmail'] as String?)?.toLowerCase() ?? '';
+                  return title.contains(_searchQuery) ||
+                      description.contains(_searchQuery) ||
+                      price.contains(_searchQuery) ||
+                      condition.contains(_searchQuery) ||
+                      ownerName.contains(_searchQuery) ||
+                      ownerEmail.contains(_searchQuery);
+                }).toList();
+
+                if (filteredDocs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _searchQuery.isEmpty
+                          ? 'No items found'
+                          : 'No items match "$_searchQuery"',
+                    ),
+                  );
+                }
+
                 return GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -158,11 +200,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
-                  itemCount: docs.length,
+                  itemCount: filteredDocs.length,
                   itemBuilder: (context, index) {
-                    final doc = docs[index];
+                    final doc = filteredDocs[index];
                     final it = doc.data();
                     final thumbUrl = (it['imageUrl'] as String?)?.trim();
+                    final ownerName = (it['ownerName'] as String?)?.trim();
+                    final ownerEmail = (it['ownerEmail'] as String?)?.trim();
+                    final ownerUid = (it['ownerUid'] as String?)?.trim();
+                    final ownerText = (ownerName != null && ownerName.isNotEmpty)
+                        ? ownerName
+                        : ((ownerEmail != null && ownerEmail.isNotEmpty)
+                              ? ownerEmail
+                              : (ownerUid ?? 'Campus Seller'));
                     return GestureDetector(
                       onTap: () => GoRouter.of(context).go('/item/${doc.id}'),
                       child: Card(
@@ -174,7 +224,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Container(
                                 height: 110,
-                                decoration: BoxDecoration(color: Colors.blue[100], borderRadius: BorderRadius.circular(8)),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 child: thumbUrl != null && thumbUrl.isNotEmpty
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
@@ -193,13 +246,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 8),
                               Text(it['title'] ?? '', style: Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 4),
-                              Text(it['ownerUid'] ?? '', style: Theme.of(context).textTheme.bodySmall),
+                              Text(ownerText, style: Theme.of(context).textTheme.bodySmall),
                               const Spacer(),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(it['price'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Chip(label: Text(it['condition'] ?? 'New', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.lightBlue),
+                                  Chip(
+                                    avatar: const Icon(Icons.verified, color: Colors.white, size: 16),
+                                    label: Text(it['condition'] ?? 'New'),
+                                  ),
                                 ],
                               ),
                             ],
@@ -215,14 +271,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.lightBlue,
         onPressed: () => GoRouter.of(context).go('/post'),
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
-        selectedItemColor: Colors.lightBlue,
-        unselectedItemColor: Colors.grey,
         onTap: (i) {
           if (i == 1) context.go('/profile');
         },

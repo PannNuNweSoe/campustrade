@@ -128,11 +128,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   CircleAvatar(
                     radius: 32,
-                    backgroundColor: Colors.lightBlue.shade100,
-                    child: const Icon(
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(
                       Icons.storefront,
                       size: 34,
-                      color: Colors.lightBlue,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -145,13 +145,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 20),
                   TextField(
                     controller: _emailCtrl,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(
+                        Icons.email,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _passCtrl,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(
+                        Icons.lock,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                     obscureText: true,
                   ),
                   const SizedBox(height: 16),
@@ -161,7 +173,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(onPressed: _signIn, child: const Text('Login')),
+                          child: ElevatedButton.icon(
+                            onPressed: _signIn,
+                            icon: const Icon(Icons.arrow_forward),
+                            label: const Text('Login'),
+                          ),
                         ),
                         TextButton(
                           onPressed: _forgotPassword,
@@ -170,7 +186,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
-                          child: OutlinedButton(onPressed: _continueWithGoogle, child: const Text('Continue with Google')),
+                          child: OutlinedButton.icon(
+                            onPressed: _continueWithGoogle,
+                            icon: Icon(
+                              Icons.account_circle,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            label: const Text('Continue with Google'),
+                          ),
                         ),
                       ],
                     )

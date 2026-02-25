@@ -15,7 +15,7 @@ class PostItemScreen extends StatelessWidget {
       body: _PostForm(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
-        selectedItemColor: Colors.lightBlue,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         onTap: (i) {
           if (i == 0) context.go('/home');
@@ -111,13 +111,23 @@ class _PostFormState extends State<_PostForm> {
     setState(() => _loading = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
+      final ownerEmail = user?.email ?? '';
+      final ownerName =
+          (user?.displayName != null && user!.displayName!.trim().isNotEmpty)
+          ? user.displayName!.trim()
+          : (ownerEmail.contains('@')
+                ? ownerEmail.split('@').first
+                : 'Campus Seller');
+
       await FirebaseFirestore.instance.collection('items').add({
         'title': title,
         'description': _desc.text.trim(),
-          'price': _price.text.trim(),
-          'condition': _condition,
+        'price': _price.text.trim(),
+        'condition': _condition,
         'imageUrl': _imageUrl,
         'ownerUid': user?.uid,
+        'ownerName': ownerName,
+        'ownerEmail': ownerEmail,
         'createdAt': FieldValue.serverTimestamp(),
       });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Posted')));
@@ -146,9 +156,22 @@ class _PostFormState extends State<_PostForm> {
         children: [
           Text('Create a new listing', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
-          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Item name')),
+          TextField(
+            controller: _title,
+            decoration: const InputDecoration(
+              labelText: 'Item name',
+              prefixIcon: Icon(Icons.inventory_2_outlined),
+            ),
+          ),
           const SizedBox(height: 8),
-          TextField(controller: _desc, decoration: const InputDecoration(labelText: 'Description'), maxLines: 3),
+          TextField(
+            controller: _desc,
+            decoration: const InputDecoration(
+              labelText: 'Description',
+              prefixIcon: Icon(Icons.description_outlined),
+            ),
+            maxLines: 3,
+          ),
           const SizedBox(height: 8),
           // Condition selector: New or Used
           Row(
@@ -170,7 +193,13 @@ class _PostFormState extends State<_PostForm> {
             ],
           ),
           const SizedBox(height: 8),
-          TextField(controller: _price, decoration: const InputDecoration(labelText: 'Price')),
+          TextField(
+            controller: _price,
+            decoration: const InputDecoration(
+              labelText: 'Price',
+              prefixIcon: Icon(Icons.attach_money),
+            ),
+          ),
           const SizedBox(height: 12),
           if (_imageUrl != null && _imageUrl!.isNotEmpty) Image.network(_imageUrl!, height: 140),
           const SizedBox(height: 8),

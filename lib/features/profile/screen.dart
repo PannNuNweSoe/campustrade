@@ -57,7 +57,17 @@ class ProfileScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Account Information', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.badge_outlined,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Account Information', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: const [
@@ -88,7 +98,17 @@ class ProfileScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Activity Summary', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.insights_outlined,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Activity Summary', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -159,7 +179,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
-        selectedItemColor: Colors.lightBlue,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         onTap: (i) { if (i==0) context.go('/home'); if (i==1) context.go('/profile'); },
         items: const [
