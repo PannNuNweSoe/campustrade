@@ -21,12 +21,12 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
   Future<void> _signIn() async {
+    final email = _emailCtrl.text.trim().toLowerCase();
+    final password = _passCtrl.text;
+
     setState(() => _loading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailCtrl.text.trim(),
-        password: _passCtrl.text,
-      );
+      await _auth.signIn(email, password);
       _show('Logged in');
       if (!mounted) return;
       context.go('/home');
@@ -42,8 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
         case 'wrong-password':
           message = 'Incorrect password.';
           break;
+        case 'invalid-login-credentials':
         case 'invalid-credential':
-          message = 'Invalid email/password credentials.';
+          message = 'Email or password is incorrect. If this email was used with Google before, use Continue with Google. Otherwise use Forgot password.';
+          break;
+        case 'operation-not-allowed':
+          message = 'Email/password login is not enabled in Firebase Authentication.';
           break;
         case 'too-many-requests':
           message = 'Too many attempts. Try again later.';
@@ -177,6 +181,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _signIn,
                             icon: const Icon(Icons.arrow_forward),
                             label: const Text('Login'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.go('/signup'),
+                            icon: Icon(
+                              Icons.person_add,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            label: const Text('Sign up'),
                           ),
                         ),
                         TextButton(

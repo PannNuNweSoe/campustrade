@@ -11,7 +11,13 @@ class PostItemScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Post Item")),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/profile'),
+        ),
+        title: const Text("Post Item"),
+      ),
       body: _PostForm(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,

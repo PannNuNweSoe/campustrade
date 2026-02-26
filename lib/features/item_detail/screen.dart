@@ -50,13 +50,28 @@ class ItemDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (itemId == null) {
-      return Scaffold(appBar: AppBar(title: const Text('Item Detail')), body: const Center(child: Text('No item selected')));
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/home'),
+          ),
+          title: const Text('Item Detail'),
+        ),
+        body: const Center(child: Text('No item selected')),
+      );
     }
 
     final docRef = FirebaseFirestore.instance.collection('items').doc(itemId);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Item Detail')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+        title: const Text('Item Detail'),
+      ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: docRef.snapshots(),
         builder: (context, snap) {

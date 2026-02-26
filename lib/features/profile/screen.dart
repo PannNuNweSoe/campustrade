@@ -15,7 +15,13 @@ class ProfileScreen extends StatelessWidget {
         : (userEmail.contains('@') ? userEmail.split('@').first : 'User');
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Profile")),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+        title: const Text("Profile"),
+      ),
       body: Column(
         children: [
           Expanded(

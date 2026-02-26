@@ -62,7 +62,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+        title: const Text('Chat'),
+      ),
       body: Column(
         children: [
           if (itemImage != null && itemImage.isNotEmpty)

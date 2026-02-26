@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             tooltip: 'Notifications',
-            onPressed: () {},
+            onPressed: () => context.go('/notifications'),
             icon: const Icon(Icons.notifications_none),
           ),
           IconButton(

@@ -6,19 +6,21 @@ import 'features/profile/screen.dart';
 import 'features/chat/screen.dart';
 import 'features/item_detail/screen.dart';
 import 'features/post_item/screen.dart';
+import 'features/signup/screen.dart';
+import 'features/notifications/screen.dart';
 
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-    final isLoginRoute = state.matchedLocation == '/';
+    final isAuthRoute = state.matchedLocation == '/' || state.matchedLocation == '/signup';
 
-    if (!isLoggedIn && !isLoginRoute) {
+    if (!isLoggedIn && !isAuthRoute) {
       return '/';
     }
 
-    if (isLoggedIn && isLoginRoute) {
+    if (isLoggedIn && isAuthRoute) {
       return '/home';
     }
 
@@ -28,6 +30,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignUpScreen(),
     ),
     GoRoute(
       path: '/home',
@@ -55,6 +61,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/post',
       builder: (context, state) => const PostItemScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
     ),
     
   ],
