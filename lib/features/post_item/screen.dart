@@ -156,9 +156,13 @@ class _PostFormState extends State<_PostForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    final media = MediaQuery.of(context);
+    final extraBottomSpace = media.padding.bottom + media.viewPadding.bottom + 96;
+
+    return SafeArea(
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, extraBottomSpace),
         children: [
           Text('Create a new listing', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
