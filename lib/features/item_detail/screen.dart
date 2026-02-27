@@ -7,6 +7,148 @@ class ItemDetailScreen extends StatelessWidget {
   final String? itemId;
   const ItemDetailScreen({super.key, this.itemId});
 
+  Future<void> _showEditDialog({
+    required BuildContext context,
+    required DocumentReference<Map<String, dynamic>> docRef,
+    required String initialTitle,
+    required String initialDescription,
+    required String initialPrice,
+    required String initialCondition,
+  }) async {
+    final titleCtrl = TextEditingController(text: initialTitle);
+    final descCtrl = TextEditingController(text: initialDescription);
+    final priceCtrl = TextEditingController(text: initialPrice);
+    var selectedCondition = initialCondition.isNotEmpty ? initialCondition : 'New';
+
+    final updated = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Edit Item'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(labelText: 'Item name'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: const InputDecoration(labelText: 'Description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: priceCtrl,
+                      decoration: const InputDecoration(labelText: 'Price'),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedCondition,
+                      decoration: const InputDecoration(labelText: 'Condition'),
+                      items: const [
+                        DropdownMenuItem(value: 'New', child: Text('New')),
+                        DropdownMenuItem(value: 'Used', child: Text('Used')),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() => selectedCondition = value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final title = titleCtrl.text.trim();
+                    final description = descCtrl.text.trim();
+                    final price = priceCtrl.text.trim();
+
+                    if (title.isEmpty) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(content: Text('Please enter item name')),
+                      );
+                      return;
+                    }
+
+                    if (price.isEmpty || double.tryParse(price.replaceAll(',', '')) == null) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(content: Text('Please enter a valid price')),
+                      );
+                      return;
+                    }
+
+                    await docRef.update({
+                      'title': title,
+                      'description': description,
+                      'price': price,
+                      'condition': selectedCondition,
+                    });
+
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop(true);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (context.mounted && updated == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item updated')),
+      );
+    }
+  }
+
+  Future<void> _deleteItem({
+    required BuildContext context,
+    required DocumentReference<Map<String, dynamic>> docRef,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Item'),
+          content: const Text('Are you sure you want to delete this item?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await docRef.delete();
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Item deleted')),
+    );
+    context.go('/home');
+  }
+
   String _formatPostedDate(dynamic createdAt) {
     if (createdAt is! Timestamp) {
       return 'Recently';
@@ -84,6 +226,8 @@ class ItemDetailScreen extends StatelessWidget {
           final condition = (data['condition'] as String?) ?? '';
           final imageUrl = (data['imageUrl'] as String?)?.trim();
           final ownerUid = data['ownerUid'] as String?;
+          final currentUid = FirebaseAuth.instance.currentUser?.uid;
+          final isOwner = ownerUid != null && ownerUid == currentUid;
           final ownerNameFromItem = (data['ownerName'] as String?)?.trim();
           final ownerEmailFromItem = (data['ownerEmail'] as String?)?.trim();
           final postedText = _formatPostedDate(data['createdAt']);
@@ -199,32 +343,80 @@ class ItemDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-                    final chatRef = await FirebaseFirestore.instance.collection('chats').add({
-                      'itemId': itemId,
-                      'itemImage': imageUrl,
-                      'participants': [ownerUid, currentUid],
-                      'createdAt': FieldValue.serverTimestamp(),
-                    });
-                    if (!context.mounted) return;
-                    GoRouter.of(context).go('/chat', extra: {
-                      'chatId': chatRef.id,
-                      'itemId': itemId,
-                      'title': title,
-                      'description': description,
-                      'price': price,
-                      'condition': condition,
-                      'itemImage': imageUrl,
-                      'ownerUid': ownerUid,
-                    });
-                  },
-                  child: const Text('Contact Owner'),
+              if (isOwner) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await _showEditDialog(
+                              context: context,
+                              docRef: docRef,
+                              initialTitle: title,
+                              initialDescription: description,
+                              initialPrice: price,
+                              initialCondition: condition,
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Update failed: $e')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          try {
+                            await _deleteItem(context: context, docRef: docRef);
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Delete failed: $e')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Delete'),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 12),
+              ],
+              if (!isOwner)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                      final chatRef = await FirebaseFirestore.instance.collection('chats').add({
+                        'itemId': itemId,
+                        'itemImage': imageUrl,
+                        'participants': [ownerUid, currentUid],
+                        'createdAt': FieldValue.serverTimestamp(),
+                      });
+                      if (!context.mounted) return;
+                      GoRouter.of(context).go('/chat', extra: {
+                        'chatId': chatRef.id,
+                        'itemId': itemId,
+                        'title': title,
+                        'description': description,
+                        'price': price,
+                        'condition': condition,
+                        'itemImage': imageUrl,
+                        'ownerUid': ownerUid,
+                      });
+                    },
+                    child: const Text('Contact Owner'),
+                  ),
+                ),
             ]),
           );
         },
