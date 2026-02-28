@@ -20,6 +20,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _auth = AuthService();
 
   bool _loading = false;
+  bool _obscurePassword = true;
 
   void _show(String text) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(text)),
@@ -116,14 +117,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Create account',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Create Account',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   TextField(
                     controller: _nameCtrl,
                     decoration: InputDecoration(
                       labelText: 'Name',
+                      hintText: 'Enter your name',
                       prefixIcon: Icon(
                         Icons.person,
                         color: Theme.of(context).colorScheme.primary,
@@ -148,12 +152,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     controller: _passCtrl,
                     decoration: InputDecoration(
                       labelText: 'Password',
+                      hintText: 'Enter your password',
                       prefixIcon: Icon(
                         Icons.lock,
                         color: Theme.of(context).colorScheme.primary,
                       ),
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        ),
+                      ),
                     ),
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                   ),
                   const SizedBox(height: 16),
                   if (_loading) const CircularProgressIndicator(),

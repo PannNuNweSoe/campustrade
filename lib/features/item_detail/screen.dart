@@ -239,13 +239,15 @@ class ItemDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Seller: ${ownerNameFromItem != null && ownerNameFromItem.isNotEmpty ? ownerNameFromItem : _deriveNameFromEmail(ownerEmailFromItem)}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      ownerNameFromItem != null && ownerNameFromItem.isNotEmpty
+                          ? ownerNameFromItem
+                          : _deriveNameFromEmail(ownerEmailFromItem),
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     if (ownerEmailFromItem != null && ownerEmailFromItem.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Email: $ownerEmailFromItem',
+                        ownerEmailFromItem,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -270,13 +272,13 @@ class ItemDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Seller: $ownerName',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          ownerName,
+                          style: Theme.of(context).textTheme.titleSmall,
                         ),
                         if (ownerEmail.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
-                            'Email: $ownerEmail',
+                            ownerEmail,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -324,21 +326,100 @@ class ItemDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text(price, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                price,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.verified_user_outlined,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Posted by',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      sellerInfoWidget,
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
-              Text(description),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Description',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(description),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 18),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Item Details', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Item Details',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Text('Condition', style: Theme.of(context).textTheme.bodySmall),
+                        const Spacer(),
+                        Text(
+                          condition.isNotEmpty ? condition : '-',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
-                    sellerInfoWidget,
-                    const SizedBox(height: 4),
-                    Text('Posted: $postedText', style: Theme.of(context).textTheme.bodySmall),
+                    Row(
+                      children: [
+                        Text('Posted', style: Theme.of(context).textTheme.bodySmall),
+                        const Spacer(),
+                        Text(
+                          postedText,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ]),
                 ),
               ),

@@ -16,9 +16,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6EC6FF),
-      brightness: Brightness.light,
+    const navy = Color(0xFF0016FF);
+    final colorScheme = const ColorScheme.light(
+      primary: navy,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFD6DAFF),
+      onPrimaryContainer: Color(0xFF0A0A33),
+      secondary: navy,
+      onSecondary: Colors.white,
+      surface: Colors.white,
+      onSurface: Color(0xFF1A1A1A),
     );
 
     return MaterialApp.router(

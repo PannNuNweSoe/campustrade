@@ -49,6 +49,50 @@ class _PostFormState extends State<_PostForm> {
   String _condition = 'New';
   bool _loading = false;
 
+  String _inferCategory(String title, String description) {
+    final text = '${title.toLowerCase()} ${description.toLowerCase()}';
+
+    const electronicsKeywords = [
+      'phone',
+      'iphone',
+      'ipad',
+      'laptop',
+      'computer',
+      'headphone',
+      'earphone',
+      'camera',
+      'tablet',
+      'charger',
+      'speaker',
+      'fan',
+      'air purifier',
+      'electric',
+      'electronic',
+      'gadget',
+      'device',
+    ];
+
+    const dressKeywords = [
+      'dress',
+      'shirt',
+      't-shirt',
+      'pants',
+      'jeans',
+      'skirt',
+      'hoodie',
+      'jacket',
+      'sweater',
+      'fashion',
+      'clothes',
+      'clothing',
+      'wear',
+    ];
+
+    if (electronicsKeywords.any(text.contains)) return 'Electronics';
+    if (dressKeywords.any(text.contains)) return 'Dress';
+    return 'Other';
+  }
+
   Future<void> _pickAndUpload() async {
     if (_loading) return;
     
@@ -105,6 +149,7 @@ class _PostFormState extends State<_PostForm> {
 
   Future<void> _post() async {
     final title = _title.text.trim();
+    final description = _desc.text.trim();
     final priceText = _price.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter item name')));
@@ -127,8 +172,9 @@ class _PostFormState extends State<_PostForm> {
 
       await FirebaseFirestore.instance.collection('items').add({
         'title': title,
-        'description': _desc.text.trim(),
+        'description': description,
         'price': _price.text.trim(),
+        'category': _inferCategory(title, description),
         'condition': _condition,
         'imageUrl': _imageUrl,
         'ownerUid': user?.uid,
@@ -170,6 +216,8 @@ class _PostFormState extends State<_PostForm> {
             controller: _title,
             decoration: const InputDecoration(
               labelText: 'Item name',
+              labelStyle: TextStyle(fontSize: 14),
+              hintText: 'e.g. Wireless Headphones',
               prefixIcon: Icon(Icons.inventory_2_outlined),
             ),
           ),
@@ -178,12 +226,15 @@ class _PostFormState extends State<_PostForm> {
             controller: _desc,
             decoration: const InputDecoration(
               labelText: 'Description',
+              labelStyle: TextStyle(fontSize: 14),
+              hintText: 'Describe item condition and usage',
               prefixIcon: Icon(Icons.description_outlined),
             ),
             maxLines: 3,
           ),
           const SizedBox(height: 8),
-          // Condition selector: New or Used
+          const Text('Condition', style: TextStyle(fontSize: 14)),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
@@ -206,8 +257,10 @@ class _PostFormState extends State<_PostForm> {
           TextField(
             controller: _price,
             decoration: const InputDecoration(
-              labelText: 'Price',
-              prefixIcon: Icon(Icons.attach_money),
+              labelText: 'Price (THB)',
+              labelStyle: TextStyle(fontSize: 14),
+              hintText: 'e.g. 850 THB',
+              prefixIcon: Icon(Icons.account_balance_wallet_outlined),
             ),
           ),
           const SizedBox(height: 12),
@@ -219,7 +272,33 @@ class _PostFormState extends State<_PostForm> {
             if (_loading) const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
           ]),
           const SizedBox(height: 12),
-          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _post, child: const Text('Post'))),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Items are exchanged in person on campus. No online payment.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _post, child: const Text('Post Item'))),
         ],
       ),
     );

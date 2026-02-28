@@ -14,57 +14,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  Future<void> _backfillMySellerInfo() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Please sign in first.')),
-      );
-      return;
-    }
-
-    final ownerEmail = user.email ?? '';
-    final ownerName =
-        (user.displayName != null && user.displayName!.trim().isNotEmpty)
-        ? user.displayName!.trim()
-        : (ownerEmail.contains('@')
-              ? ownerEmail.split('@').first
-              : 'Campus Seller');
-
-    final snapshot = await FirebaseFirestore.instance
-        .collection('items')
-        .where('ownerUid', isEqualTo: user.uid)
-        .get();
-
-    int updated = 0;
-    final batch = FirebaseFirestore.instance.batch();
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final existingName = (data['ownerName'] as String?)?.trim() ?? '';
-      final existingEmail = (data['ownerEmail'] as String?)?.trim() ?? '';
-
-      if (existingName.isEmpty || existingEmail.isEmpty) {
-        batch.update(doc.reference, {
-          'ownerName': ownerName,
-          'ownerEmail': ownerEmail,
-        });
-        updated++;
-      }
-    }
-
-    if (updated > 0) {
-      await batch.commit();
-    }
-
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(content: Text('Migration complete: $updated item(s) updated.')),
-    );
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -87,11 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Notifications',
             onPressed: () => context.go('/notifications'),
             icon: const Icon(Icons.notifications_none),
-          ),
-          IconButton(
-            tooltip: 'Backfill my seller info',
-            onPressed: _backfillMySellerInfo,
-            icon: const Icon(Icons.manage_history),
           ),
           IconButton(
             tooltip: 'Seed sample items',
@@ -166,14 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 final docs = snap.data?.docs ?? [];
 
                 final filteredDocs = docs.where((doc) {
-                  if (_searchQuery.isEmpty) return true;
                   final data = doc.data();
+                  if (_searchQuery.isEmpty) return true;
+
                   final title = (data['title'] as String?)?.toLowerCase() ?? '';
                   final description = (data['description'] as String?)?.toLowerCase() ?? '';
                   final price = (data['price'] as String?)?.toLowerCase() ?? '';
                   final condition = (data['condition'] as String?)?.toLowerCase() ?? '';
-                    final ownerName = (data['ownerName'] as String?)?.toLowerCase() ?? '';
-                    final ownerEmail = (data['ownerEmail'] as String?)?.toLowerCase() ?? '';
+                  final ownerName = (data['ownerName'] as String?)?.toLowerCase() ?? '';
+                  final ownerEmail = (data['ownerEmail'] as String?)?.toLowerCase() ?? '';
                   return title.contains(_searchQuery) ||
                       description.contains(_searchQuery) ||
                       price.contains(_searchQuery) ||

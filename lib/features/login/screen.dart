@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtrl = TextEditingController();
   final _auth = AuthService();
   bool _loading = false;
+  bool _obscurePassword = true;
 
   void _show(String text) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(text)),
@@ -142,7 +143,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   Text(
                     'Welcome to CampusTrade',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text('Login or continue with Google'),
@@ -151,6 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailCtrl,
                     decoration: InputDecoration(
                       labelText: 'Email',
+                      hintText: 'Enter your email',
                       prefixIcon: Icon(
                         Icons.email,
                         color: Theme.of(context).colorScheme.primary,
@@ -163,12 +167,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passCtrl,
                     decoration: InputDecoration(
                       labelText: 'Password',
+                      hintText: 'Enter your password',
                       prefixIcon: Icon(
                         Icons.lock,
                         color: Theme.of(context).colorScheme.primary,
                       ),
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        ),
+                      ),
                     ),
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                   ),
                   const SizedBox(height: 16),
                   if (_loading) const CircularProgressIndicator(),
