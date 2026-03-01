@@ -49,6 +49,27 @@ class _PostFormState extends State<_PostForm> {
   String _condition = 'New';
   bool _loading = false;
 
+  String? _normalizePriceInput(String input) {
+    final clean = input.trim();
+    if (clean.isEmpty) return null;
+
+    var normalized = clean.replaceAll(',', '').trim();
+    normalized = normalized
+        .replaceAll('฿', '')
+        .replaceAll('บาท', '')
+      .replaceAll(RegExp(r'\bthb\b', caseSensitive: false), '')
+        .trim();
+
+    if (!RegExp(r'^\d+(?:\.\d+)?$').hasMatch(normalized)) {
+      return null;
+    }
+
+    final parsed = num.tryParse(normalized);
+    if (parsed == null) return null;
+    final amount = parsed % 1 == 0 ? parsed.toInt().toString() : parsed.toString();
+    return '$amount THB';
+  }
+
   String _inferCategory(String title, String description) {
     final text = '${title.toLowerCase()} ${description.toLowerCase()}';
 
@@ -151,12 +172,13 @@ class _PostFormState extends State<_PostForm> {
     final title = _title.text.trim();
     final description = _desc.text.trim();
     final priceText = _price.text.trim();
+    final normalizedPrice = _normalizePriceInput(priceText);
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter item name')));
       return;
     }
-    if (priceText.isEmpty || double.tryParse(priceText.replaceAll(',', '')) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid price')));
+    if (normalizedPrice == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid price (e.g. 300 THB)')));
       return;
     }
     setState(() => _loading = true);
@@ -173,7 +195,7 @@ class _PostFormState extends State<_PostForm> {
       await FirebaseFirestore.instance.collection('items').add({
         'title': title,
         'description': description,
-        'price': _price.text.trim(),
+        'price': normalizedPrice,
         'category': _inferCategory(title, description),
         'condition': _condition,
         'imageUrl': _imageUrl,
@@ -256,6 +278,7 @@ class _PostFormState extends State<_PostForm> {
           const SizedBox(height: 8),
           TextField(
             controller: _price,
+            keyboardType: TextInputType.text,
             decoration: const InputDecoration(
               labelText: 'Price (THB)',
               labelStyle: TextStyle(fontSize: 14),

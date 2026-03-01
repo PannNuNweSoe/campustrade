@@ -33,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _exchangesCountStream = FirebaseFirestore.instance
         .collection('chats')
         .where('participants', arrayContains: uid)
+      .where('exchangeCompleted', isEqualTo: true)
         .snapshots()
         .map((snapshot) => snapshot.size);
   }

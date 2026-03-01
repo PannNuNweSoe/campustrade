@@ -1,11 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/utils/web_email_launcher.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final String? itemId;
   const ItemDetailScreen({super.key, this.itemId});
+
+  String? _normalizePriceInput(String input) {
+    final clean = input.trim();
+    if (clean.isEmpty) return null;
+
+    var normalized = clean.replaceAll(',', '').trim();
+    normalized = normalized
+        .replaceAll('฿', '')
+        .replaceAll('บาท', '')
+      .replaceAll(RegExp(r'\bthb\b', caseSensitive: false), '')
+        .trim();
+
+    if (!RegExp(r'^\d+(?:\.\d+)?$').hasMatch(normalized)) {
+      return null;
+    }
+
+    final parsed = num.tryParse(normalized);
+    if (parsed == null) return null;
+    final amount = parsed % 1 == 0 ? parsed.toInt().toString() : parsed.toString();
+    return '$amount THB';
+  }
 
   Future<void> _showEditDialog({
     required BuildContext context,
@@ -19,6 +44,7 @@ class ItemDetailScreen extends StatelessWidget {
     final descCtrl = TextEditingController(text: initialDescription);
     final priceCtrl = TextEditingController(text: initialPrice);
     var selectedCondition = initialCondition.isNotEmpty ? initialCondition : 'New';
+    var isSaving = false;
 
     final updated = await showDialog<bool>(
       context: context,
@@ -48,7 +74,7 @@ class ItemDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: selectedCondition,
+                      initialValue: selectedCondition,
                       decoration: const InputDecoration(labelText: 'Condition'),
                       items: const [
                         DropdownMenuItem(value: 'New', child: Text('New')),
@@ -68,10 +94,14 @@ class ItemDetailScreen extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
-                  onPressed: () async {
+                  onPressed: isSaving
+                      ? null
+                      : () async {
                     final title = titleCtrl.text.trim();
                     final description = descCtrl.text.trim();
-                    final price = priceCtrl.text.trim();
+                    final normalizedPrice = _normalizePriceInput(
+                      priceCtrl.text,
+                    );
 
                     if (title.isEmpty) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -80,25 +110,55 @@ class ItemDetailScreen extends StatelessWidget {
                       return;
                     }
 
-                    if (price.isEmpty || double.tryParse(price.replaceAll(',', '')) == null) {
+                    if (normalizedPrice == null) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(content: Text('Please enter a valid price')),
+                        const SnackBar(content: Text('Please enter a valid price (e.g. 300 THB)')),
                       );
                       return;
                     }
 
-                    await docRef.update({
-                      'title': title,
-                      'description': description,
-                      'price': price,
-                      'condition': selectedCondition,
-                    });
+                    setDialogState(() => isSaving = true);
+
+                    try {
+                      await docRef
+                          .update({
+                            'title': title,
+                            'description': description,
+                            'price': normalizedPrice,
+                            'condition': selectedCondition,
+                          })
+                          .timeout(const Duration(seconds: 12));
+                    } on TimeoutException {
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop(true);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Network unstable. Changes may sync shortly.'),
+                          ),
+                        );
+                      }
+                      return;
+                    } catch (e) {
+                      if (dialogContext.mounted) {
+                        setDialogState(() => isSaving = false);
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          SnackBar(content: Text('Update failed: $e')),
+                        );
+                      }
+                      return;
+                    }
 
                     if (dialogContext.mounted) {
                       Navigator.of(dialogContext).pop(true);
                     }
                   },
-                  child: const Text('Save'),
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
                 ),
               ],
             );
@@ -139,6 +199,37 @@ class ItemDetailScreen extends StatelessWidget {
     );
 
     if (confirmed != true) return;
+
+    final firestore = FirebaseFirestore.instance;
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    QuerySnapshot<Map<String, dynamic>>? relatedChats;
+    try {
+      relatedChats = await firestore
+          .collection('chats')
+          .where('itemId', isEqualTo: docRef.id)
+          .get();
+    } catch (_) {
+      relatedChats = null;
+    }
+
+    if (relatedChats != null) {
+      for (final chatDoc in relatedChats.docs) {
+        final participants =
+            (chatDoc.data()['participants'] as List?)?.whereType<String>().toList() ??
+            const <String>[];
+
+        if (currentUid == null || participants.contains(currentUid)) {
+          try {
+            await chatDoc.reference.set({
+              'exchangeCompleted': true,
+              'exchangeCompletedAt': FieldValue.serverTimestamp(),
+              'exchangeCompletedBy': currentUid,
+            }, SetOptions(merge: true));
+          } catch (_) {
+          }
+        }
+      }
+    }
 
     await docRef.delete();
 
@@ -187,6 +278,62 @@ class ItemDetailScreen extends StatelessWidget {
       return email;
     }
     return email.split('@').first;
+  }
+
+  Future<void> _openEmailApp(BuildContext context, String ownerEmail) async {
+    final email = ownerEmail.trim();
+    if (email.isEmpty) return;
+
+    try {
+      if (kIsWeb) {
+        final opened = openGmailComposeOnWeb(
+          email: email,
+          subject: 'CampusTrade Item Inquiry',
+        );
+
+        if (!opened && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open email on this browser')),
+          );
+        }
+        return;
+      }
+
+      final emailUri = Uri(
+        scheme: 'mailto',
+        path: email,
+        queryParameters: {'subject': 'CampusTrade Item Inquiry'},
+      );
+
+      final launched = await launchUrl(
+        emailUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No email app available on this device')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to open email right now')),
+        );
+      }
+    }
+  }
+
+  Widget _buildEmailLinkText(BuildContext context, String email) {
+    final linkStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.primary,
+      decoration: TextDecoration.underline,
+    );
+
+    return InkWell(
+      onTap: () => _openEmailApp(context, email),
+      child: Text(email, style: linkStyle),
+    );
   }
 
   @override
@@ -246,10 +393,7 @@ class ItemDetailScreen extends StatelessWidget {
                     ),
                     if (ownerEmailFromItem != null && ownerEmailFromItem.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        ownerEmailFromItem,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      _buildEmailLinkText(context, ownerEmailFromItem),
                     ],
                   ],
                 )
@@ -277,10 +421,7 @@ class ItemDetailScreen extends StatelessWidget {
                         ),
                         if (ownerEmail.isNotEmpty) ...[
                           const SizedBox(height: 4),
-                          Text(
-                            ownerEmail,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
+                          _buildEmailLinkText(context, ownerEmail),
                         ],
                       ],
                     );
