@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,6 +17,41 @@ class _LoginScreenState extends State<LoginScreen> {
   final _auth = AuthService();
   bool _loading = false;
   bool _obscurePassword = true;
+
+  InputDecoration _fieldDecoration({
+    required String labelText,
+    required String hintText,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+      prefixIcon: Icon(
+        prefixIcon,
+        color: colorScheme.primary,
+      ),
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.22),
+          width: 1.0,
+        ),
+      ),
+    );
+  }
 
   void _show(String text) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(text)),
@@ -149,29 +185,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text('Login or continue with Google'),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 28),
                   TextField(
                     controller: _emailCtrl,
-                    decoration: InputDecoration(
+                    decoration: _fieldDecoration(
                       labelText: 'Email',
                       hintText: 'Enter your email',
-                      prefixIcon: Icon(
-                        Icons.email,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      prefixIcon: Icons.email,
                     ),
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _passCtrl,
-                    decoration: InputDecoration(
+                    decoration: _fieldDecoration(
                       labelText: 'Password',
                       hintText: 'Enter your password',
-                      prefixIcon: Icon(
-                        Icons.lock,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      prefixIcon: Icons.lock,
                       suffixIcon: IconButton(
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
@@ -188,6 +218,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (!_loading)
                     Column(
                       children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _forgotPassword,
+                            child: const Text('Forgot password?'),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -196,33 +234,30 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: const Text('Login'),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => context.go('/signup'),
-                            icon: Icon(
-                              Icons.person_add,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            label: const Text('Sign up'),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _forgotPassword,
-                          child: const Text('Forgot password?'),
-                        ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: _continueWithGoogle,
-                            icon: Icon(
-                              Icons.account_circle,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                            icon: const FaIcon(FontAwesomeIcons.google, size: 18),
                             label: const Text('Continue with Google'),
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("Don't have an account? "),
+                            TextButton(
+                              onPressed: () => context.go('/signup'),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text('Sign up now'),
+                            ),
+                          ],
                         ),
                       ],
                     )

@@ -22,6 +22,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _loading = false;
   bool _obscurePassword = true;
 
+  InputDecoration _fieldDecoration({
+    required String labelText,
+    required String hintText,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+      prefixIcon: Icon(
+        prefixIcon,
+        color: colorScheme.primary,
+      ),
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.22),
+          width: 1.0,
+        ),
+      ),
+    );
+  }
+
   void _show(String text) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(text)),
       );
@@ -54,10 +89,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _loading = true);
     try {
       await _auth.signUp(email, password, username: name);
-      await FirebaseAuth.instance.signOut();
-      _show('Registered successfully. Please log in.');
+      _show('Registered successfully. Welcome!');
       if (!mounted) return;
-      context.go('/');
+      context.go('/home');
     } on FirebaseAuthException catch (e) {
       String message;
       switch (e.code) {
@@ -116,47 +150,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.storefront,
+                      size: 34,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'Create Account',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  const Text('Sign up for CampusTrade'),
                   const SizedBox(height: 20),
                   TextField(
                     controller: _nameCtrl,
-                    decoration: InputDecoration(
+                    decoration: _fieldDecoration(
                       labelText: 'Name',
                       hintText: 'Enter your name',
-                      prefixIcon: Icon(
-                        Icons.person,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      prefixIcon: Icons.person,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _emailCtrl,
-                    decoration: InputDecoration(
+                    decoration: _fieldDecoration(
                       labelText: 'Email',
                       hintText: 'studentID$_domain',
-                      prefixIcon: Icon(
-                        Icons.email,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      prefixIcon: Icons.email,
                     ),
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _passCtrl,
-                    decoration: InputDecoration(
+                    decoration: _fieldDecoration(
                       labelText: 'Password',
                       hintText: 'Enter your password',
-                      prefixIcon: Icon(
-                        Icons.lock,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      prefixIcon: Icons.lock,
                       suffixIcon: IconButton(
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
@@ -209,12 +246,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: _register,
-                            child: const Text('Register'),
+                            child: const Text('Sign up'),
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => context.go('/'),
-                          child: const Text('Back to login'),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('Already have account? '),
+                            TextButton(
+                              onPressed: () => context.go('/'),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text('Login'),
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -49,6 +49,39 @@ class _PostFormState extends State<_PostForm> {
   String _condition = 'New';
   bool _loading = false;
 
+  InputDecoration _fieldDecoration({
+    required String labelText,
+    required String hintText,
+    required IconData prefixIcon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+      prefixIcon: Icon(
+        prefixIcon,
+        color: colorScheme.primary,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.22),
+          width: 1.0,
+        ),
+      ),
+    );
+  }
+
   String? _normalizePriceInput(String input) {
     final clean = input.trim();
     if (clean.isEmpty) return null;
@@ -236,26 +269,27 @@ class _PostFormState extends State<_PostForm> {
           const SizedBox(height: 12),
           TextField(
             controller: _title,
-            decoration: const InputDecoration(
+            decoration: _fieldDecoration(
               labelText: 'Item name',
-              labelStyle: TextStyle(fontSize: 14),
               hintText: 'e.g. Wireless Headphones',
-              prefixIcon: Icon(Icons.inventory_2_outlined),
+              prefixIcon: Icons.inventory_2_outlined,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           TextField(
             controller: _desc,
-            decoration: const InputDecoration(
+            decoration: _fieldDecoration(
               labelText: 'Description',
-              labelStyle: TextStyle(fontSize: 14),
               hintText: 'Describe item condition and usage',
-              prefixIcon: Icon(Icons.description_outlined),
+              prefixIcon: Icons.description_outlined,
             ),
             maxLines: 3,
           ),
-          const SizedBox(height: 8),
-          const Text('Condition', style: TextStyle(fontSize: 14)),
+          const SizedBox(height: 12),
+          Text(
+            'Condition',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -279,11 +313,10 @@ class _PostFormState extends State<_PostForm> {
           TextField(
             controller: _price,
             keyboardType: TextInputType.text,
-            decoration: const InputDecoration(
+            decoration: _fieldDecoration(
               labelText: 'Price (THB)',
-              labelStyle: TextStyle(fontSize: 14),
               hintText: 'e.g. 850 THB',
-              prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+              prefixIcon: Icons.account_balance_wallet_outlined,
             ),
           ),
           const SizedBox(height: 12),
