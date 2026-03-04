@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text('Login or continue with Google'),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 36),
                   TextField(
                     controller: _emailCtrl,
                     decoration: _fieldDecoration(
@@ -234,7 +234,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: const Text('Login'),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
+                        Divider(
+                          thickness: 1,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outlineVariant
+                              .withValues(alpha: 0.35),
+                        ),
+                        const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(

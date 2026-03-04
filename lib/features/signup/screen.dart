@@ -253,7 +253,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('Already have account? '),
+                            const Text('Already have an account? '),
                             TextButton(
                               onPressed: () => context.go('/'),
                               style: TextButton.styleFrom(
