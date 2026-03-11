@@ -42,10 +42,20 @@ class _PostForm extends StatefulWidget {
 }
 
 class _PostFormState extends State<_PostForm> {
+  static const List<String> _categories = [
+    'Food',
+    'Electronics',
+    'Clothes',
+    'Shoes',
+    'Books',
+    'Beauty',
+    'Other',
+  ];
   final _title = TextEditingController();
   final _desc = TextEditingController();
   final _price = TextEditingController();
   String? _imageUrl;
+  String _category = 'Other';
   String _condition = 'New';
   bool _loading = false;
 
@@ -101,50 +111,6 @@ class _PostFormState extends State<_PostForm> {
     if (parsed == null) return null;
     final amount = parsed % 1 == 0 ? parsed.toInt().toString() : parsed.toString();
     return '$amount THB';
-  }
-
-  String _inferCategory(String title, String description) {
-    final text = '${title.toLowerCase()} ${description.toLowerCase()}';
-
-    const electronicsKeywords = [
-      'phone',
-      'iphone',
-      'ipad',
-      'laptop',
-      'computer',
-      'headphone',
-      'earphone',
-      'camera',
-      'tablet',
-      'charger',
-      'speaker',
-      'fan',
-      'air purifier',
-      'electric',
-      'electronic',
-      'gadget',
-      'device',
-    ];
-
-    const dressKeywords = [
-      'dress',
-      'shirt',
-      't-shirt',
-      'pants',
-      'jeans',
-      'skirt',
-      'hoodie',
-      'jacket',
-      'sweater',
-      'fashion',
-      'clothes',
-      'clothing',
-      'wear',
-    ];
-
-    if (electronicsKeywords.any(text.contains)) return 'Electronics';
-    if (dressKeywords.any(text.contains)) return 'Dress';
-    return 'Other';
   }
 
   Future<void> _pickAndUpload() async {
@@ -229,7 +195,7 @@ class _PostFormState extends State<_PostForm> {
         'title': title,
         'description': description,
         'price': normalizedPrice,
-        'category': _inferCategory(title, description),
+        'category': _category,
         'condition': _condition,
         'imageUrl': _imageUrl,
         'ownerUid': user?.uid,
@@ -244,6 +210,7 @@ class _PostFormState extends State<_PostForm> {
       _price.clear();
       setState(() {
         _imageUrl = null;
+        _category = 'Other';
         _condition = 'New';
       });
       if (!mounted) return;
@@ -274,6 +241,25 @@ class _PostFormState extends State<_PostForm> {
               hintText: 'e.g. Wireless Headphones',
               prefixIcon: Icons.inventory_2_outlined,
             ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _category,
+            decoration: _fieldDecoration(
+              labelText: 'Category',
+              hintText: 'Select category',
+              prefixIcon: Icons.category_outlined,
+            ),
+            items: _categories
+                .map((category) => DropdownMenuItem<String>(
+                      value: category,
+                      child: Text(category),
+                    ))
+                .toList(),
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() => _category = value);
+            },
           ),
           const SizedBox(height: 12),
           TextField(

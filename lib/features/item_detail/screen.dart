@@ -6,8 +6,18 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/web_email_launcher.dart';
+import '../../core/wishlist_store.dart';
 
 class ItemDetailScreen extends StatelessWidget {
+  static const List<String> _categories = [
+    'Food',
+    'Electronics',
+    'Clothes',
+    'Shoes',
+    'Books',
+    'Beauty',
+    'Other',
+  ];
   final String? itemId;
   const ItemDetailScreen({super.key, this.itemId});
 
@@ -38,11 +48,13 @@ class ItemDetailScreen extends StatelessWidget {
     required String initialTitle,
     required String initialDescription,
     required String initialPrice,
+    required String initialCategory,
     required String initialCondition,
   }) async {
     final titleCtrl = TextEditingController(text: initialTitle);
     final descCtrl = TextEditingController(text: initialDescription);
     final priceCtrl = TextEditingController(text: initialPrice);
+    var selectedCategory = initialCategory.isNotEmpty ? initialCategory : 'Other';
     var selectedCondition = initialCondition.isNotEmpty ? initialCondition : 'New';
     var isSaving = false;
 
@@ -60,6 +72,21 @@ class ItemDetailScreen extends StatelessWidget {
                     TextField(
                       controller: titleCtrl,
                       decoration: const InputDecoration(labelText: 'Item name'),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedCategory,
+                      decoration: const InputDecoration(labelText: 'Category'),
+                      items: _categories
+                          .map((category) => DropdownMenuItem<String>(
+                                value: category,
+                                child: Text(category),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() => selectedCategory = value);
+                      },
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -125,6 +152,7 @@ class ItemDetailScreen extends StatelessWidget {
                             'title': title,
                             'description': description,
                             'price': normalizedPrice,
+                            'category': selectedCategory,
                             'condition': selectedCondition,
                           })
                           .timeout(const Duration(seconds: 12));
@@ -370,6 +398,7 @@ class ItemDetailScreen extends StatelessWidget {
           final title = (data['title'] as String?) ?? '';
           final description = (data['description'] as String?) ?? '';
           final price = (data['price'] as String?) ?? '';
+          final category = (data['category'] as String?) ?? 'Other';
           final condition = (data['condition'] as String?) ?? '';
           final imageUrl = (data['imageUrl'] as String?)?.trim();
           final ownerUid = data['ownerUid'] as String?;
@@ -432,38 +461,74 @@ class ItemDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Center(
-                child: Container(
-                  width: double.infinity,
-                  height: 250,
-                  constraints: const BoxConstraints(maxWidth: 700),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: (imageUrl != null && imageUrl.isNotEmpty)
-                        ? Container(
-                            color: Colors.white,
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                              height: 250,
-                            ),
-                          )
-                        : Container(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.image, size: 64, color: Colors.white70),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 250,
+                      constraints: const BoxConstraints(maxWidth: 700),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
                           ),
-                  ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: (imageUrl != null && imageUrl.isNotEmpty)
+                            ? Container(
+                                color: Colors.white,
+                                child: Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.contain,
+                                  width: double.infinity,
+                                  height: 250,
+                                ),
+                              )
+                            : Container(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.image, size: 64, color: Colors.white70),
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: ValueListenableBuilder<List<WishlistItem>>(
+                        valueListenable: WishlistStore.wishlistItems,
+                        builder: (context, wishlist, _) {
+                          final isWishlisted = wishlist.any((item) => item.id == docRef.id);
+                          return Material(
+                            color: Colors.white.withValues(alpha: 0.90),
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              tooltip: isWishlisted ? 'Remove from wishlist' : 'Add to wishlist',
+                              onPressed: () {
+                                WishlistStore.toggle(
+                                  WishlistItem(
+                                    id: docRef.id,
+                                    title: title,
+                                    price: price,
+                                    imageUrl: imageUrl ?? '',
+                                    category: category,
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                isWishlisted ? Icons.favorite : Icons.favorite_border,
+                                color: isWishlisted ? Colors.red : Colors.black87,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -542,6 +607,17 @@ class ItemDetailScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                     Row(
                       children: [
+                        Text('Category', style: Theme.of(context).textTheme.bodySmall),
+                        const Spacer(),
+                        Text(
+                          category.isNotEmpty ? category : 'Other',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
                         Text('Condition', style: Theme.of(context).textTheme.bodySmall),
                         const Spacer(),
                         Text(
@@ -578,6 +654,7 @@ class ItemDetailScreen extends StatelessWidget {
                               initialTitle: title,
                               initialDescription: description,
                               initialPrice: price,
+                              initialCategory: category,
                               initialCondition: condition,
                             );
                           } catch (e) {

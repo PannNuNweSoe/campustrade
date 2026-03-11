@@ -240,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .outlineVariant
-                              .withValues(alpha: 0.35),
+                          .withValues(alpha: 0.12),
                         ),
                         const SizedBox(height: 8),
                         SizedBox(

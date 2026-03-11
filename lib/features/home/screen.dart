@@ -12,7 +12,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  static const List<String> _categories = [
+    'Food',
+    'Electronics',
+    'Clothes',
+    'Shoes',
+    'Books',
+    'Beauty',
+    'Other',
+  ];
   String _searchQuery = '';
+  String _selectedCategory = 'All';
 
   @override
   void dispose() {
@@ -53,10 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
               final col = FirebaseFirestore.instance.collection('items');
               for (var i = 1; i <= 6; i++) {
                 final doc = col.doc();
+                final category = _categories[(i - 1) % _categories.length];
                 batch.set(doc, {
                   'title': 'Sample Item $i',
                   'description': 'This is a sample item #$i',
                   'price': '฿${(i + 1) * 100}',
+                  'category': category,
                   'imageUrl': null,
                   'ownerUid': user?.uid,
                   'ownerName': ownerName,
@@ -102,6 +114,43 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          SizedBox(
+            height: 44,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    for (final category in ['All', ..._categories])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(category),
+                          selected: _selectedCategory == category,
+                          backgroundColor: Colors.white,
+                          selectedColor: Theme.of(context).colorScheme.primary,
+                          side: const BorderSide(color: Colors.black, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          labelStyle: TextStyle(
+                            color: _selectedCategory == category ? Colors.white : Colors.black,
+                          ),
+                          onSelected: (_) {
+                            setState(() {
+                              _selectedCategory = category;
+                            });
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance.collection('items').orderBy('createdAt', descending: true).snapshots(),
@@ -111,18 +160,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 final filteredDocs = docs.where((doc) {
                   final data = doc.data();
+                  final category = (data['category'] as String?)?.trim();
+                  final matchesCategory =
+                      _selectedCategory == 'All' || category == _selectedCategory;
+                  if (!matchesCategory) return false;
+
                   if (_searchQuery.isEmpty) return true;
 
                   final title = (data['title'] as String?)?.toLowerCase() ?? '';
                   final description = (data['description'] as String?)?.toLowerCase() ?? '';
                   final price = (data['price'] as String?)?.toLowerCase() ?? '';
                   final condition = (data['condition'] as String?)?.toLowerCase() ?? '';
+                  final categoryText = (data['category'] as String?)?.toLowerCase() ?? '';
                   final ownerName = (data['ownerName'] as String?)?.toLowerCase() ?? '';
                   final ownerEmail = (data['ownerEmail'] as String?)?.toLowerCase() ?? '';
                   return title.contains(_searchQuery) ||
                       description.contains(_searchQuery) ||
                       price.contains(_searchQuery) ||
                       condition.contains(_searchQuery) ||
+                      categoryText.contains(_searchQuery) ||
                       ownerName.contains(_searchQuery) ||
                       ownerEmail.contains(_searchQuery);
                 }).toList();
@@ -130,9 +186,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (filteredDocs.isEmpty) {
                   return Center(
                     child: Text(
-                      _searchQuery.isEmpty
+                      _searchQuery.isEmpty && _selectedCategory == 'All'
                           ? 'No items found'
-                          : 'No items match "$_searchQuery"',
+                          : 'No items match your filters',
                     ),
                   );
                 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/wishlist_store.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -189,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ),
                                             ),
                                           ],
-                                        )
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -197,6 +198,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               },
                             );
                           },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.favorite_border,
+                                      size: 20,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('My Wishlist', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ValueListenableBuilder<List<WishlistItem>>(
+                                  valueListenable: WishlistStore.wishlistItems,
+                                  builder: (context, wishlist, _) {
+                                    if (wishlist.isEmpty) {
+                                      return Text(
+                                        'No items in wishlist yet',
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      );
+                                    }
+
+                                    return ListView.separated(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: wishlist.length,
+                                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                                      itemBuilder: (context, index) {
+                                        final item = wishlist[index];
+                                        return InkWell(
+                                          borderRadius: BorderRadius.circular(8),
+                                          onTap: () => context.go('/item/${item.id}'),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 44,
+                                                height: 44,
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
+                                                      .withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: item.imageUrl.isNotEmpty
+                                                    ? ClipRRect(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        child: Image.network(
+                                                          item.imageUrl,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (_, _, _) => const Icon(Icons.image),
+                                                        ),
+                                                      )
+                                                    : const Icon(Icons.favorite_border),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.title,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: Theme.of(context).textTheme.bodyMedium,
+                                                    ),
+                                                    Text(
+                                                      '${item.price}  ${item.category}',
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: Theme.of(context).textTheme.bodySmall,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
