@@ -25,10 +25,11 @@ class PostItemScreen extends StatelessWidget {
         unselectedItemColor: Colors.grey,
         onTap: (i) {
           if (i == 0) context.go('/home');
-          if (i == 1) context.go('/profile');
+          if (i == 2) context.go('/profile');
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Post'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),

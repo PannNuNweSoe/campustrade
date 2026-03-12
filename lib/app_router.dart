@@ -8,6 +8,7 @@ import 'features/item_detail/screen.dart';
 import 'features/post_item/screen.dart';
 import 'features/signup/screen.dart';
 import 'features/notifications/screen.dart';
+import 'features/wishlist/screen.dart';
 
 
 final GoRouter appRouter = GoRouter(
@@ -66,7 +67,10 @@ final GoRouter appRouter = GoRouter(
       path: '/notifications',
       builder: (context, state) => const NotificationsScreen(),
     ),
-    
+    GoRoute(
+      path: '/wishlist',
+      builder: (context, state) => const WishlistScreen(),
+    ),
   ],
 );
 

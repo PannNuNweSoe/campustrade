@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/wishlist_store.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -164,28 +163,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             const Text('Activity Summary', style: TextStyle(fontWeight: FontWeight.bold)),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 12),
                                         Row(
                                           children: [
                                             Expanded(
                                               child: Column(
                                                 children: [
+                                                  CircleAvatar(
+                                                    radius: 24,
+                                                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                                                    child: Icon(
+                                                      Icons.inventory_2_outlined,
+                                                      color: Theme.of(context).colorScheme.primary,
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
                                                   Text(
                                                     isLoading ? '-' : '$itemsCount',
-                                                    style: Theme.of(context).textTheme.titleLarge,
+                                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                                                   ),
-                                                  const Text('Items'),
+                                                  const Text('Items Posted', style: TextStyle(fontSize: 12)),
                                                 ],
                                               ),
                                             ),
                                             Expanded(
                                               child: Column(
                                                 children: [
+                                                  CircleAvatar(
+                                                    radius: 24,
+                                                    backgroundColor: Colors.green.withValues(alpha: 0.15),
+                                                    child: const Icon(
+                                                      Icons.swap_horiz_rounded,
+                                                      color: Colors.green,
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
                                                   Text(
                                                     isLoading ? '-' : '$exchangesCount',
-                                                    style: Theme.of(context).textTheme.titleLarge,
+                                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                                                   ),
-                                                  const Text('Exchanges'),
+                                                  const Text('Exchanges Completed', style: TextStyle(fontSize: 12), textAlign: TextAlign.center),
                                                 ],
                                               ),
                                             ),
@@ -204,94 +223,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.favorite_border,
-                                      size: 20,
-                                      color: Theme.of(context).colorScheme.primary,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => context.go('/wishlist'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                                vertical: 14.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.favorite_border,
+                                    size: 22,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Text(
+                                      'My Wishlist',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
-                                    const SizedBox(width: 8),
-                                    const Text('My Wishlist', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ValueListenableBuilder<List<WishlistItem>>(
-                                  valueListenable: WishlistStore.wishlistItems,
-                                  builder: (context, wishlist, _) {
-                                    if (wishlist.isEmpty) {
-                                      return Text(
-                                        'No items in wishlist yet',
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                      );
-                                    }
-
-                                    return ListView.separated(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: wishlist.length,
-                                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                                      itemBuilder: (context, index) {
-                                        final item = wishlist[index];
-                                        return InkWell(
-                                          borderRadius: BorderRadius.circular(8),
-                                          onTap: () => context.go('/item/${item.id}'),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 44,
-                                                height: 44,
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                      .withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: item.imageUrl.isNotEmpty
-                                                    ? ClipRRect(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        child: Image.network(
-                                                          item.imageUrl,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder: (_, _, _) => const Icon(Icons.image),
-                                                        ),
-                                                      )
-                                                    : const Icon(Icons.favorite_border),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      item.title,
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: Theme.of(context).textTheme.bodyMedium,
-                                                    ),
-                                                    Text(
-                                                      '${item.price}  ${item.category}',
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: Theme.of(context).textTheme.bodySmall,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
+                                  ),
+                                  const Icon(Icons.chevron_right, color: Colors.grey),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -341,12 +297,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
+        currentIndex: 2,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
-        onTap: (i) { if (i==0) context.go('/home'); if (i==1) context.go('/profile'); },
+        onTap: (i) {
+          if (i == 0) context.go('/home');
+          if (i == 1) context.go('/post');
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Post'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
