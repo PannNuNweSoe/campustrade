@@ -39,6 +39,10 @@ class WishlistStore {
       ValueNotifier<List<WishlistItem>>(<WishlistItem>[]);
   static bool _isInitialized = false;
 
+  static void initialize() {
+    _ensureInitialized();
+  }
+
   static CollectionReference<Map<String, dynamic>>? _wishlistCol(String uid) =>
       FirebaseFirestore.instance
           .collection('users')
@@ -69,7 +73,8 @@ class WishlistStore {
       wishlistItems.value = snapshot.docs
           .map((doc) => WishlistItem.fromMap(doc.id, doc.data()))
           .toList();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Wishlist load failed: $e');
       // Keep existing value if load fails
     }
   }
@@ -97,9 +102,15 @@ class WishlistStore {
     if (uid != null) {
       final col = _wishlistCol(uid)!;
       if (isRemoving) {
-        col.doc(item.id).delete().catchError((_) {});
+        col
+            .doc(item.id)
+            .delete()
+            .catchError((e) => debugPrint('Wishlist remove failed: $e'));
       } else {
-        col.doc(item.id).set(item.toMap()).catchError((_) {});
+        col
+            .doc(item.id)
+            .set(item.toMap())
+            .catchError((e) => debugPrint('Wishlist save failed: $e'));
       }
     }
   }

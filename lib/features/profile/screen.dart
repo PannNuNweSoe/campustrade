@@ -72,7 +72,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 photoUrl,
                                 width: 80,
                                 height: 80,
-                                fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return const CircleAvatar(
                                     radius: 40,
@@ -288,7 +287,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   await FirebaseAuth.instance.signOut();
                   if (!context.mounted) return;
-                  context.go('/');
+                  context.go('/landing');
                 },
                 child: const Text('Logout'),
               ),

@@ -9,16 +9,19 @@ import 'features/post_item/screen.dart';
 import 'features/signup/screen.dart';
 import 'features/notifications/screen.dart';
 import 'features/wishlist/screen.dart';
+import 'features/landing/screen.dart';
 
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/landing',
   redirect: (context, state) {
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-    final isAuthRoute = state.matchedLocation == '/' || state.matchedLocation == '/signup';
+    final location = state.matchedLocation;
+    final isAuthRoute = location == '/' || location == '/signup';
+    final isPublicRoute = isAuthRoute || location == '/landing';
 
-    if (!isLoggedIn && !isAuthRoute) {
-      return '/';
+    if (!isLoggedIn && !isPublicRoute) {
+      return '/landing';
     }
 
     if (isLoggedIn && isAuthRoute) {
@@ -28,6 +31,10 @@ final GoRouter appRouter = GoRouter(
     return null;
   },
   routes: [
+    GoRoute(
+      path: '/landing',
+      builder: (context, state) => const LandingScreen(),
+    ),
     GoRoute(
       path: '/',
       builder: (context, state) => const LoginScreen(),
