@@ -7,154 +7,77 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
     final theme = Theme.of(context);
 
-    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-    final textColor = const Color(0xFFF6F8FF);
-
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0B153E), Color(0xFF1442A6), Color(0xFF2A7BFF)],
-            stops: [0.0, 0.55, 1.0],
+      appBar: AppBar(
+        title: const Text('CampusTrade'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => context.go('/signup'),
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
+            icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+            label: const Text('Sign up'),
           ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              Positioned(
-                top: -160,
-                right: -120,
-                child: _blurBlob(
-                  size: 320,
-                  color: const Color(0xFF9ED4FF).withValues(alpha: 0.24),
-                ),
-              ),
-              Positioned(
-                bottom: -180,
-                left: -120,
-                child: _blurBlob(
-                  size: 380,
-                  color: const Color(0xFFFF9E6D).withValues(alpha: 0.20),
-                ),
-              ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 980;
-                  final horizontalPadding = isNarrow ? 20.0 : 56.0;
-
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(horizontalPadding, 18, horizontalPadding, 26),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white24),
-                              ),
-                              child: const Icon(Icons.storefront_rounded, color: Colors.white),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'CampusTrade',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                color: textColor,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const Spacer(),
-                            TextButton.icon(
-                              onPressed: () => context.go('/signup'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: textColor,
-                                backgroundColor: Colors.white.withValues(alpha: 0.10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              icon: const Icon(Icons.person_add_alt_1_rounded),
-                              label: const Text('Create free account'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-                        if (isNarrow)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _heroContent(
-                                context,
-                                isLoggedIn: isLoggedIn,
-                                textColor: textColor,
-                              ),
-                              const SizedBox(height: 20),
-                              _appPreviewCard(context),
-                            ],
-                          )
-                        else
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 6,
-                                child: _heroContent(
-                                  context,
-                                  isLoggedIn: isLoggedIn,
-                                  textColor: textColor,
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                flex: 5,
-                                child: _appPreviewCard(context),
-                              ),
-                            ],
-                          ),
-                        const SizedBox(height: 28),
-                        _coreFeaturesSection(isNarrow: isNarrow),
-                        const SizedBox(height: 18),
-                        _howItWorksSection(),
-                        const SizedBox(height: 18),
-                        _whyUseSection(isNarrow: isNarrow),
-                        const SizedBox(height: 18),
-                        _finalCtaSection(context, isLoggedIn: isLoggedIn),
-                        const SizedBox(height: 16),
-                        _footerSection(),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
-    );
-  }
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 920;
+            final horizontalPadding = isNarrow ? 16.0 : 40.0;
 
-  static Widget _blurBlob({required double size, required Color color}) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          boxShadow: [
-            BoxShadow(
-              color: color,
-              blurRadius: 80,
-              spreadRadius: 24,
-            ),
-          ],
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: isNarrow
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _heroContent(context, isLoggedIn: isLoggedIn),
+                                const SizedBox(height: 16),
+                                _appPreviewCard(context),
+                              ],
+                            )
+                          : Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 6,
+                                  child: _heroContent(context, isLoggedIn: isLoggedIn),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  flex: 5,
+                                  child: _appPreviewCard(context),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _coreFeaturesSection(context, isNarrow: isNarrow),
+                  const SizedBox(height: 12),
+                  _howItWorksSection(context),
+                  const SizedBox(height: 12),
+                  _whyUseSection(context, isNarrow: isNarrow),
+                  const SizedBox(height: 12),
+                  _finalCtaSection(context, isLoggedIn: isLoggedIn),
+                  const SizedBox(height: 12),
+                  Text(
+                    'CampusTrade is a student marketplace for Mae Fah Luang University. Buy, sell, save, and connect with confidence.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -163,20 +86,21 @@ class LandingScreen extends StatelessWidget {
   Widget _heroContent(
     BuildContext context, {
     required bool isLoggedIn,
-    required Color textColor,
   }) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _brandVisualRow(context),
+        const SizedBox(height: 14),
         Wrap(
           spacing: 10,
           runSpacing: 10,
           children: [
-            _glassTag(icon: Icons.school, text: 'Only for campus students'),
-            _glassTag(icon: Icons.sell_rounded, text: 'Post items fast'),
-            _glassTag(icon: Icons.favorite_rounded, text: 'Save your favorites'),
-            _glassTag(icon: Icons.chat_bubble_outline_rounded, text: 'Contact sellers easily'),
+            _badgeTag(context, icon: Icons.school, text: 'Campus students only'),
+            _badgeTag(context, icon: Icons.sell_rounded, text: 'Post items fast'),
+            _badgeTag(context, icon: Icons.favorite_rounded, text: 'Wishlist support'),
+            _badgeTag(context, icon: Icons.chat_bubble_outline_rounded, text: 'Easy contact'),
           ],
         ),
         const SizedBox(height: 18),
@@ -185,7 +109,6 @@ class LandingScreen extends StatelessWidget {
           child: Text(
             'Your campus marketplace for textbooks, gadgets, fashion, beauty, and more.',
             style: theme.textTheme.displaySmall?.copyWith(
-              color: textColor,
               fontWeight: FontWeight.w900,
               height: 1.05,
               letterSpacing: 0.2,
@@ -196,38 +119,32 @@ class LandingScreen extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
           child: Text(
-            'CampusTrade helps students exchange new or used items inside the university community. You can post your items, browse listings by category, save items to your wishlist, and contact sellers quickly and easily.',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: textColor.withValues(alpha: 0.92),
-              height: 1.4,
-            ),
+            'Post, browse, save, and chat with confidence in your campus community.',
+            style: theme.textTheme.titleMedium?.copyWith(height: 1.4),
           ),
         ),
         const SizedBox(height: 20),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _quickStat(context, icon: Icons.auto_graph, label: '120+ active listings'),
+            _quickStat(context, icon: Icons.verified_user_outlined, label: 'Verified student users'),
+            _quickStat(context, icon: Icons.handshake_outlined, label: 'Safe on-campus exchange'),
+          ],
+        ),
+        const SizedBox(height: 18),
         Wrap(
           spacing: 12,
           runSpacing: 12,
           children: [
             ElevatedButton.icon(
               onPressed: () => context.go(isLoggedIn ? '/home' : '/'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF123B9C),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
               icon: const Icon(Icons.login_rounded),
-              label: const Text('Login now'),
+              label: Text(isLoggedIn ? 'Go to Home' : 'Login now'),
             ),
             OutlinedButton.icon(
               onPressed: () => context.go('/signup'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: textColor,
-                side: BorderSide(color: textColor.withValues(alpha: 0.6)),
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
               icon: const Icon(Icons.person_add_alt_1_rounded),
               label: const Text('Create free account'),
             ),
@@ -238,27 +155,35 @@ class LandingScreen extends StatelessWidget {
   }
 
   static Widget _appPreviewCard(BuildContext context) {
-    final text = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        color: Colors.white.withValues(alpha: 0.13),
-        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Popular campus items',
-            style: text.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [
+              _CategoryLogo(icon: Icons.menu_book_rounded, label: 'Books'),
+              _CategoryLogo(icon: Icons.devices_rounded, label: 'Electronics'),
+              _CategoryLogo(icon: Icons.checkroom_rounded, label: 'Clothes'),
+              _CategoryLogo(icon: Icons.face_retouching_natural_rounded, label: 'Beauty'),
+            ],
           ),
           const SizedBox(height: 12),
           _listingTile(
+            context,
             icon: Icons.directions_run_rounded,
             title: 'Training Shoes',
             subtitle: 'Good condition',
@@ -267,6 +192,7 @@ class LandingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _listingTile(
+            context,
             icon: Icons.face_retouching_natural_rounded,
             title: 'Lipstick',
             subtitle: 'Unused, sealed',
@@ -275,6 +201,7 @@ class LandingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _listingTile(
+            context,
             icon: Icons.headphones_rounded,
             title: 'Wireless Headphones',
             subtitle: 'Battery lasts all day',
@@ -286,17 +213,17 @@ class LandingScreen extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.favorite_rounded, color: Colors.white),
-                SizedBox(width: 10),
+                Icon(Icons.favorite_rounded, color: theme.colorScheme.primary),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Save items to your wishlist and contact the seller easily.',
-                    style: TextStyle(color: Colors.white, height: 1.25),
+                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.25),
                   ),
                 ),
               ],
@@ -307,100 +234,123 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  static Widget _coreFeaturesSection({required bool isNarrow}) {
+  static Widget _coreFeaturesSection(BuildContext context, {required bool isNarrow}) {
     return _sectionCard(
       title: 'Core Features',
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
         children: [
-          _infoTile(
+          _iconFeatureTile(
+            context,
+            icon: Icons.verified_user_outlined,
             title: 'Campus-only access',
-            description:
-                'Sign in using your university email account for a safer student marketplace.',
-            width: isNarrow ? double.infinity : 320,
+            subtitle: 'Verified student accounts',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
-            title: 'Easy item posting',
-            description:
-                'Add your item photo, title, price, description, and category in just a few simple steps.',
-            width: isNarrow ? double.infinity : 320,
+          _iconFeatureTile(
+            context,
+            icon: Icons.add_box_outlined,
+            title: 'Post in minutes',
+            subtitle: 'Photo, price, category',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
+          _iconFeatureTile(
+            context,
+            icon: Icons.grid_view_rounded,
             title: 'Category browsing',
-            description:
-                'Browse items under Electronics, Clothes, Shoes, Beauty, Books, Food, and Other.',
-            width: isNarrow ? double.infinity : 320,
+            subtitle: 'Find items faster',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
-            title: 'Wishlist support',
-            description: 'Save items you like and view them later from your profile page.',
-            width: isNarrow ? double.infinity : 320,
+          _iconFeatureTile(
+            context,
+            icon: Icons.favorite_border_rounded,
+            title: 'Wishlist',
+            subtitle: 'Save favorites quickly',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
-            title: 'Contact seller',
-            description: 'Open the item detail page and contact the seller easily.',
-            width: isNarrow ? double.infinity : 320,
+          _iconFeatureTile(
+            context,
+            icon: Icons.chat_bubble_outline_rounded,
+            title: 'Direct chat',
+            subtitle: 'Contact owners instantly',
+            width: isNarrow ? double.infinity : 290,
+          ),
+          _iconFeatureTile(
+            context,
+            icon: Icons.swap_horiz_rounded,
+            title: 'Easy exchange',
+            subtitle: 'Meet safely on campus',
+            width: isNarrow ? double.infinity : 290,
           ),
         ],
       ),
     );
   }
 
-  static Widget _howItWorksSection() {
+  static Widget _howItWorksSection(BuildContext context) {
     return _sectionCard(
       title: 'How It Works',
-      child: Column(
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
         children: [
-          _stepTile(
-            step: 'Step 1',
+          _stepChip(
+            context,
+            step: '1',
+            icon: Icons.login_rounded,
             title: 'Login',
-            description: 'Login with your MFU student email account.',
+            description: 'Sign in with student email',
           ),
-          SizedBox(height: 10),
-          _stepTile(
-            step: 'Step 2',
+          _stepChip(
+            context,
+            step: '2',
+            icon: Icons.storefront_outlined,
             title: 'Browse or post',
-            description: 'Browse available items or post your own item for sale.',
+            description: 'List or discover items',
           ),
-          SizedBox(height: 10),
-          _stepTile(
-            step: 'Step 3',
+          _stepChip(
+            context,
+            step: '3',
+            icon: Icons.handshake_outlined,
             title: 'Save or contact',
-            description:
-                'Save interesting items to your wishlist or contact the seller directly.',
+            description: 'Chat and exchange safely',
           ),
         ],
       ),
     );
   }
 
-  static Widget _whyUseSection({required bool isNarrow}) {
+  static Widget _whyUseSection(BuildContext context, {required bool isNarrow}) {
     return _sectionCard(
       title: 'Why use CampusTrade?',
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
         children: [
-          _infoTile(
-            title: 'Safe for students',
-            description: 'Only campus users can access the platform.',
-            width: isNarrow ? double.infinity : 320,
+          _valueBadge(
+            context,
+            icon: Icons.shield_outlined,
+            label: 'Trusted student community',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
-            title: 'Quick and simple',
-            description: 'Post and find items without complicated steps.',
-            width: isNarrow ? double.infinity : 320,
+          _valueBadge(
+            context,
+            icon: Icons.flash_on_outlined,
+            label: 'Fast to post and browse',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
-            title: 'Affordable choices',
-            description: 'Buy useful secondhand items at student-friendly prices.',
-            width: isNarrow ? double.infinity : 320,
+          _valueBadge(
+            context,
+            icon: Icons.savings_outlined,
+            label: 'Student-friendly prices',
+            width: isNarrow ? double.infinity : 290,
           ),
-          _infoTile(
-            title: 'Organized experience',
-            description: 'Search and browse items by category with ease.',
-            width: isNarrow ? double.infinity : 320,
+          _valueBadge(
+            context,
+            icon: Icons.tune_rounded,
+            label: 'Clean and organized listings',
+            width: isNarrow ? double.infinity : 290,
           ),
         ],
       ),
@@ -415,7 +365,7 @@ class LandingScreen extends StatelessWidget {
         children: [
           Text(
             'Login now and explore student listings on CampusTrade.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.92), height: 1.35),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.35),
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -424,24 +374,11 @@ class LandingScreen extends StatelessWidget {
             children: [
               ElevatedButton.icon(
                 onPressed: () => context.go(isLoggedIn ? '/home' : '/'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF123B9C),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
                 icon: const Icon(Icons.login_rounded),
-                label: const Text('Login now'),
+                label: Text(isLoggedIn ? 'Go to Home' : 'Login now'),
               ),
               OutlinedButton.icon(
                 onPressed: () => context.go('/signup'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
                 icon: const Icon(Icons.person_add_alt_1_rounded),
                 label: const Text('Create free account'),
               ),
@@ -452,77 +389,66 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  static Widget _footerSection() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        'CampusTrade is a student marketplace for Mae Fah Luang University.\nBuy, sell, save, and connect with confidence.',
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.88),
-          height: 1.45,
-        ),
-      ),
-    );
-  }
-
   static Widget _sectionCard({required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-
-  static Widget _infoTile({
-    required String title,
-    required String description,
-    required double width,
-  }) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: width),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white24),
-        ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 6),
-            Text(
-              description,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                height: 1.3,
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _iconFeatureTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double width,
+  }) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: width),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.20)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: theme.textTheme.bodySmall),
+                ],
               ),
             ),
           ],
@@ -531,62 +457,107 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  static Widget _stepTile({
+  static Widget _stepChip(
+    BuildContext context, {
     required String step,
+    required IconData icon,
     required String title,
     required String description,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            step,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.88),
-              fontWeight: FontWeight.w700,
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 280,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.20)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white,
+              child: Text(
+                step,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, size: 16, color: theme.colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(description, style: theme.textTheme.bodySmall),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              height: 1.3,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  static Widget _listingTile({
+  static Widget _valueBadge(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required double width,
+  }) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: width),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.20)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _listingTile(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
     required String price,
     required String chipText,
   }) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -597,54 +568,41 @@ class LandingScreen extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: Colors.white),
+                child: Icon(icon, color: theme.colorScheme.primary),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 price,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.location_on_outlined, color: Colors.white.withValues(alpha: 0.9), size: 16),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                ),
-              ),
+              Expanded(child: Text(subtitle, style: theme.textTheme.bodySmall)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
+                  color: theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
                   chipText,
                   style: const TextStyle(
-                    color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -655,25 +613,128 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  static Widget _glassTag({required IconData icon, required String text}) {
+  static Widget _badgeTag(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+  }) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white30),
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 18),
+          Icon(icon, color: theme.colorScheme.primary, size: 18),
           const SizedBox(width: 8),
+          Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  static Widget _brandVisualRow(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary.withValues(alpha: 0.16),
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
+          ],
+        ),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.20),
+        ),
+      ),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          _logoOrb(context, icon: Icons.storefront_rounded),
+          _logoOrb(context, icon: Icons.school_rounded),
+          _logoOrb(context, icon: Icons.inventory_2_rounded),
+          _logoOrb(context, icon: Icons.favorite_rounded),
+          _logoOrb(context, icon: Icons.chat_bubble_rounded),
+          _logoOrb(context, icon: Icons.bolt_rounded),
+        ],
+      ),
+    );
+  }
+
+  static Widget _logoOrb(BuildContext context, {required IconData icon}) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.22)),
+      ),
+      child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+    );
+  }
+
+  static Widget _quickStat(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
           Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryLogo extends StatelessWidget {
+  const _CategoryLogo({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
