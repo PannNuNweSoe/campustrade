@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/item_image.dart';
 import '../../core/wishlist_store.dart';
 
 class WishlistScreen extends StatelessWidget {
@@ -60,21 +61,14 @@ class WishlistScreen extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Container(
+                          child: ItemImage(
+                            imageUrl: item.imageUrl,
                             width: 68,
                             height: 68,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.10),
-                            child: item.imageUrl.isNotEmpty
-                                ? Image.network(
-                                    item.imageUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        const Icon(Icons.image, size: 32),
-                                  )
-                                : const Icon(Icons.image, size: 32),
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(10),
+                            placeholderColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                            iconSize: 32,
                           ),
                         ),
                         const SizedBox(width: 14),

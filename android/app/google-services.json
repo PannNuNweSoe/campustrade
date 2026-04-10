@@ -12,7 +12,20 @@
           "package_name": "com.example.campustrade"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "207966505420-pf7h3plhv0oodafi325dubgej9okdids.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.campustrade",
+            "certificate_hash": "2bb2a5f28a759704a563b5ad197c5d8565c76c7c"
+          }
+        },
+        {
+          "client_id": "207966505420-ghn3v54kh9jehklu6qs2djlfltgvkuk0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB3_h-dE2ymE2_FZmMY3lHOKUht3joyUOI"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "207966505420-ghn3v54kh9jehklu6qs2djlfltgvkuk0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "207966505420-lonc2msjp1jt4cci71u0oleq48q9dujd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.campustrade"
+              }
+            }
+          ]
         }
       }
     }

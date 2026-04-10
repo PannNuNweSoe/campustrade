@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../services/auth_service.dart';
@@ -12,11 +13,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _auth = AuthService();
   bool _loading = false;
   bool _obscurePassword = true;
+
+  String _normalizeForValidation(String value) {
+    // Strip invisible zero-width characters often used in edge/sad-path input.
+    final withoutInvisible = value.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+    return withoutInvisible.trim();
+  }
 
   InputDecoration _fieldDecoration({
     required String labelText,
@@ -58,6 +66,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
   Future<void> _signIn() async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) return;
+
     final email = _emailCtrl.text.trim().toLowerCase();
     final password = _passCtrl.text;
 
@@ -107,6 +118,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _show('Signed in with Google');
       if (!mounted) return;
       context.go('/home');
+    } on PlatformException catch (e) {
+      final details = [e.code, if (e.message != null && e.message!.isNotEmpty) e.message].join(': ');
+      _show('Google sign in failed: $details');
     } on FirebaseAuthException catch (e) {
       _show('Google sign in failed: ${e.message ?? e.code}');
     } catch (e) {
@@ -186,32 +200,66 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   const Text('Login or continue with Google'),
                   const SizedBox(height: 36),
-                  TextField(
-                    controller: _emailCtrl,
-                    decoration: _fieldDecoration(
-                      labelText: 'Email',
-                      hintText: 'Enter your email',
-                      prefixIcon: Icons.email,
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _passCtrl,
-                    decoration: _fieldDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
-                      prefixIcon: Icons.lock,
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() => _obscurePassword = !_obscurePassword);
-                        },
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          key: const Key('email_input'),
+                          controller: _emailCtrl,
+                          decoration: _fieldDecoration(
+                            labelText: 'Email',
+                            hintText: 'Enter your email',
+                            prefixIcon: Icons.email,
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            final email = _normalizeForValidation(value ?? '');
+                            if (email.isEmpty) {
+                              return 'Email is required';
+                            }
+                            if (email.length > 254) {
+                              return 'Invalid email format';
+                            }
+                            final emailPattern = RegExp(
+                              r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                            );
+                            if (!emailPattern.hasMatch(email)) {
+                              return 'Invalid email format';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          key: const Key('password_input'),
+                          controller: _passCtrl,
+                          decoration: _fieldDecoration(
+                            labelText: 'Password',
+                            hintText: 'Enter your password',
+                            prefixIcon: Icons.lock,
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                            ),
+                          ),
+                          obscureText: _obscurePassword,
+                          validator: (value) {
+                            final password = _normalizeForValidation(value ?? '');
+                            if (password.isEmpty) {
+                              return 'Password is required';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ),
-                    obscureText: _obscurePassword,
                   ),
                   const SizedBox(height: 16),
                   if (_loading) const CircularProgressIndicator(),
@@ -229,6 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
+                            key: const Key('login_submit_button'),
                             onPressed: _signIn,
                             icon: const Icon(Icons.arrow_forward),
                             label: const Text('Login'),

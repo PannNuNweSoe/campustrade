@@ -4,8 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  AuthService({
+    FirebaseAuth? auth,
+    FirebaseFirestore? db,
+  })  : _authOverride = auth,
+        _dbOverride = db;
+
+  final FirebaseAuth? _authOverride;
+  final FirebaseFirestore? _dbOverride;
+
+  FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
+  FirebaseFirestore get _db => _dbOverride ?? FirebaseFirestore.instance;
 
   String _normalizeEmail(String email) => email.trim().toLowerCase();
 
@@ -36,12 +45,16 @@ class AuthService {
     // create basic user doc
     final uid = cred.user?.uid;
     if (uid != null) {
-      await _db.collection('users').doc(uid).set({
-        'email': normalizedEmail,
-        if (cleanUsername != null && cleanUsername.isNotEmpty)
-          'username': cleanUsername,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      try {
+        await _db.collection('users').doc(uid).set({
+          'email': normalizedEmail,
+          if (cleanUsername != null && cleanUsername.isNotEmpty)
+            'username': cleanUsername,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('User profile sync failed after sign-up: $e');
+      }
     }
     return cred;
   }
@@ -69,10 +82,14 @@ class AuthService {
 
     final user = cred.user;
     if (user != null) {
-      await _db.collection('users').doc(user.uid).set({
-        'email': user.email,
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      try {
+        await _db.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('User profile sync failed after Google sign-in: $e');
+      }
     }
 
     return cred;

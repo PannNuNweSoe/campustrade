@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
+import '../../firebase_options.dart';
 
 class PostItemScreen extends StatelessWidget {
   const PostItemScreen({super.key});
@@ -55,6 +59,8 @@ class _PostFormState extends State<_PostForm> {
   final _title = TextEditingController();
   final _desc = TextEditingController();
   final _price = TextEditingController();
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
   String? _imageUrl;
   String _category = 'Other';
   String _condition = 'New';
@@ -114,58 +120,152 @@ class _PostFormState extends State<_PostForm> {
     return '$amount THB';
   }
 
-  Future<void> _pickAndUpload() async {
+  Future<void> _pickImage() async {
     if (_loading) return;
-    
+
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 55,
+        maxWidth: 1280,
+        maxHeight: 1280,
+      );
+
       if (pickedFile == null) return;
-      
-      final bytes = await pickedFile.readAsBytes();
-      print('DEBUG: File picked, size: ${bytes.length} bytes');
-      
-      // Check file size (max 2MB for base64)
-      if (bytes.length > 2 * 1024 * 1024) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image size must be less than 2MB')),
-          );
-        }
+
+      if (!mounted) return;
+
+      final imageBytes = await pickedFile.readAsBytes();
+      final sizeInBytes = imageBytes.length;
+      if (sizeInBytes > 5 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image size must be less than 5MB')),
+        );
         return;
       }
-      
-      if (!mounted) return;
-      setState(() => _loading = true);
-      
-      try {
-        // Convert to base64
-        final base64String = base64Encode(bytes);
-        print('DEBUG: Image converted to base64, length: ${base64String.length}');
-        
-        setState(() => _imageUrl = 'data:image/png;base64,$base64String');
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image selected successfully')),
-        );
-      } catch (e) {
-        print('DEBUG: Error: $e');
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to process image: $e')),
-        );
-      } finally {
-        if (mounted) setState(() => _loading = false);
-      }
+
+      setState(() {
+        _selectedImage = pickedFile;
+        _selectedImageBytes = imageBytes;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image selected successfully')),
+      );
     } catch (e) {
-      print('DEBUG: File picker error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
       }
     }
+  }
+
+  Future<String?> _buildInlineImageDataUrl() async {
+    final selectedImage = _selectedImage;
+    final bytes = _selectedImageBytes ?? await selectedImage?.readAsBytes();
+    if (selectedImage == null || bytes == null) return null;
+    if (bytes.isEmpty) return null;
+
+    // Firestore document max is 1 MiB, so keep a conservative payload limit.
+    const maxInlineBytes = 700 * 1024;
+    if (bytes.length > maxInlineBytes) {
+      throw Exception('Selected image is too large for free plan fallback. Please choose a smaller image.');
+    }
+
+    final extension = selectedImage.path.contains('.')
+        ? selectedImage.path.split('.').last.toLowerCase()
+        : 'jpg';
+    final mimeType = extension == 'png'
+        ? 'image/png'
+        : (extension == 'webp' ? 'image/webp' : 'image/jpeg');
+
+    return 'data:$mimeType;base64,${base64Encode(bytes)}';
+  }
+
+  Future<String?> _uploadSelectedImage(User? user) async {
+    final selectedImage = _selectedImage;
+    if (selectedImage == null) return null;
+    if (user == null) {
+      throw Exception('Please sign in before uploading an image.');
+    }
+
+    final Uint8List bytes = _selectedImageBytes ?? await selectedImage.readAsBytes();
+    if (bytes.isEmpty) {
+      throw Exception('Selected image is empty. Please choose another image.');
+    }
+
+    final extension = selectedImage.path.contains('.')
+        ? selectedImage.path.split('.').last.toLowerCase()
+        : 'jpg';
+    final safeExtension = RegExp(r'^[a-z0-9]+$').hasMatch(extension)
+        ? extension
+        : 'jpg';
+    final contentType = safeExtension == 'png'
+        ? 'image/png'
+        : (safeExtension == 'webp' ? 'image/webp' : 'image/jpeg');
+    final configuredBucket = DefaultFirebaseOptions.currentPlatform.storageBucket;
+    if (configuredBucket == null || configuredBucket.isEmpty) {
+      throw Exception('Firebase Storage bucket is not configured.');
+    }
+    final bucketName = configuredBucket.replaceFirst(RegExp(r'^gs://'), '');
+    final bucketCandidates = <String>{
+      bucketName,
+      if (bucketName.contains('.firebasestorage.app'))
+        bucketName.replaceFirst('.firebasestorage.app', '.appspot.com'),
+      if (bucketName.contains('.appspot.com'))
+        bucketName.replaceFirst('.appspot.com', '.firebasestorage.app'),
+    }.toList();
+
+    FirebaseException? lastFirebaseError;
+    for (final candidate in bucketCandidates) {
+      final storage = FirebaseStorage.instanceFor(bucket: candidate);
+      final storageRef = storage
+          .ref()
+          .child('items')
+          .child(user.uid)
+          .child('${DateTime.now().millisecondsSinceEpoch}.$safeExtension');
+
+      try {
+        final snapshot = await storageRef.putData(
+          bytes,
+          SettableMetadata(contentType: contentType),
+        );
+        if (snapshot.state != TaskState.success) {
+          throw Exception('Image upload did not complete successfully.');
+        }
+
+        for (var attempt = 0; attempt < 5; attempt++) {
+          try {
+            return await storageRef.getDownloadURL();
+          } on FirebaseException catch (e) {
+            lastFirebaseError = e;
+            final isObjectNotFound = e.code == 'object-not-found';
+            if (!isObjectNotFound || attempt == 4) {
+              break;
+            }
+            await Future.delayed(Duration(milliseconds: 300 * (attempt + 1)));
+          }
+        }
+
+        return storageRef.fullPath;
+      } on FirebaseException catch (e) {
+        lastFirebaseError = e;
+        if (e.code != 'object-not-found') {
+          rethrow;
+        }
+      }
+    }
+
+    if (lastFirebaseError != null) {
+      throw Exception(
+        'Image upload failed because the Firebase Storage bucket could not be found. '
+        'Checked buckets: ${bucketCandidates.join(', ')}. '
+        'Open Firebase Console > Storage and create/activate the default bucket.',
+      );
+    }
+    throw Exception('Image upload failed.');
   }
 
   Future<void> _post() async {
@@ -192,32 +292,73 @@ class _PostFormState extends State<_PostForm> {
                 ? ownerEmail.split('@').first
                 : 'Campus Seller');
 
+      String? uploadedImageReference;
+      if (_selectedImage != null) {
+        if (kIsWeb) {
+          uploadedImageReference = await _buildInlineImageDataUrl();
+        } else {
+          try {
+            uploadedImageReference = await _uploadSelectedImage(user).timeout(
+              const Duration(seconds: 20),
+            );
+          } catch (e) {
+            final message = e.toString();
+            if (message.contains('Storage bucket could not be found')) {
+              uploadedImageReference = await _buildInlineImageDataUrl();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Using free fallback: image saved directly in Firestore.',
+                    ),
+                  ),
+                );
+              }
+            } else {
+              rethrow;
+            }
+          }
+        }
+      }
+
       await FirebaseFirestore.instance.collection('items').add({
         'title': title,
         'description': description,
         'price': normalizedPrice,
         'category': _category,
         'condition': _condition,
-        'imageUrl': _imageUrl,
+        'imageUrl': uploadedImageReference,
         'ownerUid': user?.uid,
         'ownerName': ownerName,
         'ownerEmail': ownerEmail,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }).timeout(const Duration(seconds: 20));
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Posted')));
       // Clear
       _title.clear();
       _desc.clear();
       _price.clear();
       setState(() {
+        _selectedImage = null;
+        _selectedImageBytes = null;
         _imageUrl = null;
         _category = 'Other';
         _condition = 'New';
       });
       if (!mounted) return;
       GoRouter.of(context).go('/home');
+    } on FirebaseException catch (e) {
+      final message = e.message?.trim();
+      final details = message == null || message.isEmpty
+          ? e.code
+          : '${e.code}: $message';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Post failed: $details')),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Post failed: $e')),
+      );
     } finally {
       setState(() => _loading = false);
     }
@@ -307,12 +448,21 @@ class _PostFormState extends State<_PostForm> {
             ),
           ),
           const SizedBox(height: 12),
-          if (_imageUrl != null && _imageUrl!.isNotEmpty) Image.network(_imageUrl!, height: 140),
+          if (_selectedImage != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: _selectedImageBytes != null
+                  ? Image.memory(
+                      _selectedImageBytes!,
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : const SizedBox(height: 140),
+            ),
           const SizedBox(height: 8),
           Row(children: [
-            ElevatedButton(onPressed: _loading ? null : _pickAndUpload, child: const Text('Choose Image')),
-            const SizedBox(width: 12),
-            if (_loading) const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            ElevatedButton(onPressed: _loading ? null : _pickImage, child: const Text('Choose Image')),
           ]),
           const SizedBox(height: 12),
           Container(
@@ -341,7 +491,22 @@ class _PostFormState extends State<_PostForm> {
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _post, child: const Text('Post Item'))),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _post,
+              child: _loading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Post Item'),
+            ),
+          ),
         ],
       ),
     );

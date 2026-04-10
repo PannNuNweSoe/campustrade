@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/item_image.dart';
 import '../../core/utils/web_email_launcher.dart';
 import '../../core/wishlist_store.dart';
 
@@ -479,21 +480,14 @@ class ItemDetailScreen extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: (imageUrl != null && imageUrl.isNotEmpty)
-                            ? Container(
-                                color: Colors.white,
-                                child: Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.contain,
-                                  width: double.infinity,
-                                  height: 250,
-                                ),
-                              )
-                            : Container(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.image, size: 64, color: Colors.white70),
-                              ),
+                        child: ItemImage(
+                          imageUrl: imageUrl,
+                          height: 250,
+                          fit: BoxFit.contain,
+                          borderRadius: BorderRadius.circular(16),
+                          placeholderColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                          iconSize: 64,
+                        ),
                       ),
                     ),
                     Positioned(

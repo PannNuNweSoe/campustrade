@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/item_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -197,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.78,
+                    childAspectRatio: 0.86,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -221,40 +222,64 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                height: 110,
+                                height: 96,
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: thumbUrl != null && thumbUrl.isNotEmpty
-                                  ? ClipRRect(
+                                  ? ItemImage(
+                                      imageUrl: thumbUrl,
+                                      height: 96,
+                                      fit: BoxFit.contain,
                                       borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        color: Colors.white,
-                                        child: Image.network(
-                                          thumbUrl,
-                                          fit: BoxFit.contain,
-                                          width: double.infinity,
-                                          height: 110,
-                                        ),
-                                      ),
+                                      placeholderColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                                      iconSize: 48,
                                     )
-                                  : const Center(child: Icon(Icons.image, size: 48, color: Colors.white70)),
+                                  : Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Icon(Icons.image, size: 48, color: Colors.white70),
+                                    ),
                               ),
                               const SizedBox(height: 8),
-                              Text(it['title'] ?? '', style: Theme.of(context).textTheme.titleMedium),
+                              Text(
+                                it['title'] ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
                               const SizedBox(height: 4),
-                              Text(ownerText, style: Theme.of(context).textTheme.bodySmall),
+                              Text(
+                                ownerText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                               const Spacer(),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(it['price'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Flexible(
+                                    child: Text(
+                                      it['price'] ?? '',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
                                   Chip(
-                                    avatar: const Icon(Icons.verified, color: Colors.white, size: 16),
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    avatar: const Icon(Icons.verified, color: Colors.white, size: 14),
                                     label: Text(it['condition'] ?? 'New'),
                                   ),
                                 ],

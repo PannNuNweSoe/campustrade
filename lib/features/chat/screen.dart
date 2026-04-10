@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/item_image.dart';
 import 'provider.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -74,7 +75,19 @@ class _ChatScreenState extends State<ChatScreen> {
           if (itemImage != null && itemImage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Image.network(itemImage, height: 120),
+              child: ItemImage(
+                imageUrl: itemImage,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(12),
+                placeholderColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.10),
+                placeholderIcon: Icons.image,
+                iconSize: 32,
+              ),
             ),
           Expanded(
             child: _chatId.isEmpty
