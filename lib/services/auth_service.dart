@@ -52,8 +52,7 @@ class AuthService {
             'username': cleanUsername,
           'createdAt': FieldValue.serverTimestamp(),
         });
-      } catch (e) {
-        debugPrint('User profile sync failed after sign-up: $e');
+      } catch (_) {
       }
     }
     return cred;
@@ -87,8 +86,7 @@ class AuthService {
           'email': user.email,
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-      } catch (e) {
-        debugPrint('User profile sync failed after Google sign-in: $e');
+      } catch (_) {
       }
     }
 

@@ -73,8 +73,7 @@ class WishlistStore {
       wishlistItems.value = snapshot.docs
           .map((doc) => WishlistItem.fromMap(doc.id, doc.data()))
           .toList();
-    } catch (e) {
-      debugPrint('Wishlist load failed: $e');
+    } catch (_) {
       // Keep existing value if load fails
     }
   }
@@ -105,12 +104,12 @@ class WishlistStore {
         col
             .doc(item.id)
             .delete()
-            .catchError((e) => debugPrint('Wishlist remove failed: $e'));
+            .catchError((_) {});
       } else {
         col
             .doc(item.id)
             .set(item.toMap())
-            .catchError((e) => debugPrint('Wishlist save failed: $e'));
+            .catchError((_) {});
       }
     }
   }

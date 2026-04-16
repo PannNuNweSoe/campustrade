@@ -48,6 +48,58 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:207966505420:android:1672f5238a5d966d9f7569",
+        "android_client_info": {
+          "package_name": "my.edu.university.campustrade"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "207966505420-qblf7os4gg2pg10igkio8o6chdjifheu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "my.edu.university.campustrade",
+            "certificate_hash": "fddc06d262aa2341b35dc9549db81f26dfc78ced"
+          }
+        },
+        {
+          "client_id": "207966505420-th6ejkq7ce2v0q887tma415n42u5lq52.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "my.edu.university.campustrade",
+            "certificate_hash": "2a85d3b3f4c961963db316f747c3c0bc981623ff"
+          }
+        },
+        {
+          "client_id": "207966505420-ghn3v54kh9jehklu6qs2djlfltgvkuk0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3_h-dE2ymE2_FZmMY3lHOKUht3joyUOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "207966505420-ghn3v54kh9jehklu6qs2djlfltgvkuk0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "207966505420-lonc2msjp1jt4cci71u0oleq48q9dujd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.campustrade"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

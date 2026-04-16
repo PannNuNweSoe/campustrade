@@ -1,4 +1,4 @@
-package com.example.campustrade
+package my.edu.university.campustrade
 
 import io.flutter.embedding.android.FlutterActivity
 
